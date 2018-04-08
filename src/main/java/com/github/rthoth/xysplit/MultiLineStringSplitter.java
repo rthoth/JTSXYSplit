@@ -1,0 +1,50 @@
+package com.github.rthoth.xysplit;
+
+import java.util.function.Function;
+import org.locationtech.jts.geom.*;
+import java.util.LinkedList;
+import java.util.List;
+
+public class MultiLineStringSplitter implements Function<MultiLineString, R> {
+
+	private final LineStringSplitter underlying;
+
+	public MultiLineStringSplitter(Reference reference) {
+	   underlying = new LineStringSplitter(reference);
+	}
+
+	private void add(Geometry geometry, List<LineString> geometries) {
+		if (!geometry.isEmpty()) {
+			if (geometry instanceof LineString) {
+				geometries.add((LineString) geometry);
+			} else if (geometry instanceof MultiLineString) {
+				for (int i = 0; i < geometry.getNumGeometries(); i++) {
+					geometries.add((LineString) geometry.getGeometryN(i));
+				}
+			} else {
+				throw new TopologyException("Invalid lineString!");
+			}
+		}
+	}
+
+	public R apply(MultiLineString lineString) {
+
+		LinkedList<LineString> lts = new LinkedList<>(), gts = new LinkedList<>();
+		GeometryFactory factory = lineString.getFactory();
+
+		for (int i = 0; i < lineString.getNumGeometries(); i++) {
+			R r = underlying.apply((LineString) lineString.getGeometryN(i));
+			add(r.lt, lts);
+		}
+
+		Geometry lt = (lts.size() > 1) ?
+			factory.createMultiLineString(lts.toArray(new LineString[lts.size()])) :
+			lts.get(0);
+
+		Geometry gt = (gts.size() > 1) ?
+			factory.createMultiLineString(gts.toArray(new LineString[gts.size()])) :
+			gts.get(0);
+		
+		return R.from(lt, gt, underlying.reference);
+	}
+}
