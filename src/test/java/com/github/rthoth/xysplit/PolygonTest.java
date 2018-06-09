@@ -2,6 +2,7 @@ package com.github.rthoth.xysplit;
 
 import org.junit.Test;
 import org.locationtech.jts.geom.CoordinateSequence;
+import org.locationtech.jts.geom.Geometry;
 import org.locationtech.jts.geom.LinearRing;
 import org.locationtech.jts.geom.MultiPolygon;
 import org.locationtech.jts.geom.Polygon;
@@ -85,5 +86,42 @@ public class PolygonTest extends GeometryTest {
 		R r = new XYSplitter(REF_Y_2).apply(POLYGON_2);
 		checkThat(r.lt).isEqualsTopo(wkt("POLYGON ((4.375 -3, 0 -10, -10 -4, -9.625 -3, -2 -3, -2 -3, -2 -5, -0.2857142857142858 -3, 4.375 -3), (-5 -4, -3 -6, -6 -5, -5 -4))"));
 		checkThat(r.gt).isEqualsTopo(wkt("POLYGON ((-9.625 -3, -7 4, -7 -3, -2 2, -5 -3, 9 7, 2 -3, 10 6, 4.375 -3, -0.2857142857142858 -3, 4 2, -2 -3, -9.625 -3))"));
+	}
+	
+	@Test
+	public void multi_x1 () {
+		R r = new XYSplitter(REF_X_1).apply(MULTI);
+		checkThat(r.lt).isEqualsTopo(wkt("MULTIPOLYGON (((2 5, -4 5, -2 7, -3 8, 0 10, 2 9.333333333333334, 2 9, -1 9, -2 6, 2 8.4, 2 5)), ((2 -6.8, 0 -10, -10 -4, -7 4, -7 -3, -2 2, -5 -3, 2 2, 2 0.3333333333333335, -2 -3, -2 -5, 2 -0.3333333333333339, 2 -6.8), (-5 -4, -3 -6, -6 -5, -5 -4)))"));
+		checkThat(r.gt).isEqualsTopo(wkt("MULTIPOLYGON (((2 9.333333333333334, 3 9, 2 7, 2 8.4, 3 9, 2 9, 2 9.333333333333334)), ((2 6, 4 5, 2 5, 2 6)), ((2 2, 9 7, 2 -3, 10 6, 2 -6.8, 2 -0.3333333333333339, 4 2, 2 0.3333333333333335, 2 2)))"));
+	}
+	
+	@Test
+	public void multi_x2() {
+		R r = new XYSplitter(REF_X_2).apply(MULTI);
+		checkThat(r.lt).isEqualsTopo(wkt("MULTIPOLYGON (((-2 5, -4 5, -2 7, -3 8, -2 8.666666666666666, -2 5)), ((-2 -8.8, -10 -4, -7 4, -7 -3, -2 2, -5 -3, -2 -0.8571428571428568, -2 -3, -2 -5, -2 -8.8), (-5 -4, -3 -6, -6 -5, -5 -4)))"));
+		checkThat(r.gt).isEqualsTopo(wkt("MULTIPOLYGON (((-2 8.666666666666666, 0 10, 3 9, 2 7, 2 6, 4 5, -2 5, -2 8.666666666666666), (-2 6, 3 9, -1 9, -2 6)), ((-2 -0.8571428571428568, 9 7, 2 -3, 10 6, 0 -10, -2 -8.8, -2 -5, 4 2, -2 -3, -2 -0.8571428571428568)))"));
+	}
+	
+	@Test
+	public void multi_y1() {
+		R r = new XYSplitter(REF_Y_1).apply(MULTI);
+		checkThat(r.lt).isEqualsTopo(wkt("MULTIPOLYGON (((2 6, 4 5, -4 5, -3 6, 2 6)), ((8.3 6, 2 -3, 10 6, 0 -10, -10 -4, -7 4, -7 -3, -2 2, -5 -3, 7.6 6, 8.3 6), (-2 -3, 4 2, -2 -5, -2 -3), (-5 -4, -3 -6, -6 -5, -5 -4)))"));
+		checkThat(r.gt).isEqualsTopo(wkt("MULTIPOLYGON (((-3 6, -2 7, -3 8, 0 10, 3 9, 2 7, 2 6, -3 6), (-2 6, 3 9, -1 9, -2 6)), ((7.6 6, 9 7, 8.3 6, 7.6 6)))"));
+	}
+	
+	@Test
+	public void multi_y2() {
+		R r = new XYSplitter(REF_Y_2).apply(MULTI);
+		checkThat(r.lt).isEqualsTopo(wkt("MULTIPOLYGON (((4.375 -3, 0 -10, -10 -4, -9.625 -3, -2 -3, -2 -5, -0.2857142857142858 -3, 4.375 -3), (-5 -4, -3 -6, -6 -5, -5 -4)))"));
+		checkThat(r.gt).isEqualsTopo(wkt("MULTIPOLYGON (((0 10, 3 9, 2 7, 2 6, 4 5, -4 5, -2 7, -3 8, 0 10), (-2 6, 3 9, -1 9, -2 6)), ((-9.625 -3, -7 4, -7 -3, -2 2, -5 -3, 9 7, 2 -3, 10 6, 4.375 -3, -0.2857142857142858 -3, 4 2, -2 -3, -9.625 -3)))"));
+	}
+	
+	@Test
+	public void interior() {
+		Geometry partial = new XYSplitter(REF_X_1).apply(MULTI).lt;
+		partial = new XYSplitter(REF_Y_2).apply(partial).gt;
+		partial = new XYSplitter(REF_X_2).apply(partial).gt;
+		partial = new XYSplitter(REF_Y_1).apply(partial).lt;
+		checkThat(partial).isEqualsTopo(wkt("MULTIPOLYGON (((2 6, 2 5, -2 5, -2 6, 2 6)), ((-2 -0.8571428571428568, 2 2, 2 0.3333333333333335, -2 -3, -2 -0.8571428571428568)), ((-0.2857142857142856 -3, 2 -0.3333333333333339, 2 -3, -0.2857142857142856 -3)))"));
 	}
 }

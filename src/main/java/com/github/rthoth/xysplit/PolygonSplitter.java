@@ -137,12 +137,23 @@ class PolygonSplitter implements Function<Polygon, R> {
 				events.addLast(events.poll());
 			}
 
-			for (int i = 0; i < events.size(); i++) {
+			for (int i = 0, l = events.size(); i < l; i += 2) {
 				final Event in = events.get(i);
-				final Event out = events.remove(i + 1);
+				final Event out = events.get(i + 1);
 				boundary.add(in);
 				boundary.add(out);
 				pair.add(in, out);
+			}
+			
+			TreeSet<Event> inputs;
+			if (boundary.first().location == Location.IN)
+				inputs = new TreeSet<>(comparator);
+			else
+				inputs = new TreeSet<>(comparator.reversed());
+			
+			for (Event event : boundary) {
+				if (event.location == Location.IN)
+					inputs.add(event);
 			}
 
 			List<Poly> wholeInside = new LinkedList<>();
@@ -174,9 +185,9 @@ class PolygonSplitter implements Function<Polygon, R> {
 			}
 
 			LinkedList<LinearRing> result = new LinkedList<>();
-			while (!events.isEmpty()) {
+			while (!inputs.isEmpty()) {
 				final ArrayList<Coordinate> buffer = new ArrayList<>();
-				final Event origin = events.poll();
+				final Event origin = inputs.pollFirst();
 				Event start = origin;
 
 				do {
@@ -203,8 +214,8 @@ class PolygonSplitter implements Function<Polygon, R> {
 						
 						buffer.add(stop.getCoordinate());
 					} else {
-						
-						buffer.add(start.getCoordinate());
+						if (start.index != 0)
+							buffer.add(start.getCoordinate());
 						
 						if (start.index >= stop.index) {
 							for (int i = start.index - 1; i >= stop.index; i--) {
@@ -240,8 +251,11 @@ class PolygonSplitter implements Function<Polygon, R> {
 					if (start == origin) {
 						buffer.add(origin.getCoordinate());
 						result.add(factory.createLinearRing(buffer.toArray(new Coordinate[buffer.size()])));
-					} else if (seen.contains(start)) {
-						throw new XYSplitterException(start + " has already been visited!");
+					} else if (!seen.contains(start)) {
+						if (start.location == Location.IN)
+							inputs.remove(start);
+					} else {
+						throw new XYSplitterException(start + " has already been visited!");						
 					}
 					
 				} while (start != origin);
