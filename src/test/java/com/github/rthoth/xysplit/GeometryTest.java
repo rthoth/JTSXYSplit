@@ -1,23 +1,38 @@
 package com.github.rthoth.xysplit;
 
-import org.locationtech.jts.geom.GeometryFactory;
-import org.locationtech.jts.geom.CoordinateSequence;
-import org.locationtech.jts.geom.Geometry;
+import org.locationtech.jts.geom.*;
 import org.locationtech.jts.geom.impl.PackedCoordinateSequence;
+import org.locationtech.jts.geom.impl.PackedCoordinateSequenceFactory;
 import org.locationtech.jts.io.ParseException;
 import org.locationtech.jts.io.WKTReader;
 
+import java.util.Collections;
 import java.util.List;
-import org.locationtech.jts.geom.Coordinate;
 import java.util.ArrayList;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 
 abstract class GeometryTest {
 
-	protected final GeometryFactory FACTORY = new GeometryFactory();
+	protected static final GeometryFactory FACTORY = new GeometryFactory(PackedCoordinateSequenceFactory.DOUBLE_FACTORY);
 
 	protected static CoordinateSequence coordinateSequence(double... ords) {
 		return new PackedCoordinateSequence.Double(ords, 2);
+	}
+
+	protected List<CoordinateSequence> extractShell(Geometry geometry) {
+		if (geometry instanceof Polygon) {
+			return Collections.singletonList(((Polygon) geometry).getExteriorRing().getCoordinateSequence());
+		} else if (geometry instanceof MultiPolygon) {
+			MultiPolygon multi = (MultiPolygon) geometry;
+			return IntStream
+							.range(0, multi.getNumGeometries())
+							.mapToObj(i -> ((Polygon) multi.getGeometryN(i)).getExteriorRing().getCoordinateSequence())
+							.collect(Collectors.toList());
+		} else {
+			return null;
+		}
 	}
 
 	protected List<Coordinate> list(CoordinateSequence sequence) {

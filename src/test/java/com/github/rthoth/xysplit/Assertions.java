@@ -12,7 +12,7 @@ public class Assertions extends org.assertj.core.api.Assertions {
 	public static class GeoChecker extends AbstractAssert<GeoChecker, Geometry> {
 
 		public GeoChecker(Geometry geometry) {
-			super(geometry, GeoChecker.class);		
+			super(geometry, GeoChecker.class);
 		}
 		
 		public GeoChecker isEqualsTopo(Geometry geometry) {

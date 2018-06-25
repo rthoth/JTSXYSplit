@@ -1,12 +1,18 @@
 package com.github.rthoth.xysplit;
 
 import java.util.function.Function;
-import org.locationtech.jts.geom.*;
+import org.locationtech.jts.geom.Geometry;
+import org.locationtech.jts.geom.LineString;
+import org.locationtech.jts.geom.MultiLineString;
+import org.locationtech.jts.geom.MultiPolygon;
+import org.locationtech.jts.geom.Polygon;
+import org.locationtech.jts.geom.TopologyException;
+
 
 /**
  * This is a main class. You can use this to split yours geometries.
  */
-public class XYSplitter implements Function<Geometry, R> {
+public class XYSplitter implements Function<Geometry, SplitResult> {
 
 	public final Reference reference;
 
@@ -14,7 +20,7 @@ public class XYSplitter implements Function<Geometry, R> {
 		this.reference = reference;
 	}
 
-	public R apply(Geometry geometry) {
+	public SplitResult apply(Geometry geometry) {
 
 		if (geometry instanceof Polygon) {
 			return new PolygonSplitter(reference).apply((Polygon) geometry);

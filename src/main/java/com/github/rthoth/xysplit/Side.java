@@ -12,4 +12,8 @@ public enum Side {
 		else
 			return Location.ON;
 	}
+
+	public Side invert() {
+		return this == LT ? GT : (this == GT ? LT : EQ);
+	}
 }

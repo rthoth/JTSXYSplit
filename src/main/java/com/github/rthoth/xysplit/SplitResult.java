@@ -5,7 +5,7 @@ import org.locationtech.jts.geom.Geometry;
 /**
  * Response object.
  */
-class R {
+public class SplitResult {
 
 	public final Geometry lt;
 
@@ -13,13 +13,9 @@ class R {
 
 	public final Reference reference;
 
-	public R(Geometry lt, Geometry gt, Reference reference) {
+	public SplitResult(Geometry lt, Geometry gt, Reference reference) {
 		this.lt = lt;
 		this.gt = gt;
 		this.reference = reference;
-	}
-
-	public static R from(Geometry lt, Geometry gt, Reference reference) {
-		return new R(lt, gt, reference);
 	}
 }

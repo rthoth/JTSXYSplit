@@ -11,7 +11,7 @@ import org.locationtech.jts.geom.Polygon;
 import org.locationtech.jts.geom.TopologyException;
 
 
-class MultiPolygonSplitter implements Function<MultiPolygon, R> {
+class MultiPolygonSplitter implements Function<MultiPolygon, SplitResult> {
 
    private final PolygonSplitter polygonSplitter;
 
@@ -33,14 +33,14 @@ class MultiPolygonSplitter implements Function<MultiPolygon, R> {
 		}
 	}
 
-	public R apply(MultiPolygon multiPolygon) {
+	public SplitResult apply(MultiPolygon multiPolygon) {
 
 		LinkedList<Polygon> lt = new LinkedList<>(), gt = new LinkedList<>();
 
 	   for (int index = 0; index < multiPolygon.getNumGeometries(); index++) {
-			R r = polygonSplitter.apply((Polygon) multiPolygon.getGeometryN(index));
-			add(r.lt, lt);
-			add(r.gt, gt);
+			SplitResult splitResult = polygonSplitter.apply((Polygon) multiPolygon.getGeometryN(index));
+			add(splitResult.lt, lt);
+			add(splitResult.gt, gt);
 		}
 
 		GeometryFactory factory = multiPolygon.getFactory();
@@ -48,6 +48,6 @@ class MultiPolygonSplitter implements Function<MultiPolygon, R> {
 		MultiPolygon ltResponse = factory.createMultiPolygon(lt.toArray(new Polygon[lt.size()]));
 		MultiPolygon gtResponse = factory.createMultiPolygon(gt.toArray(new Polygon[gt.size()]));
 		
-		return R.from(ltResponse, gtResponse, polygonSplitter.reference);
+		return new SplitResult(ltResponse, gtResponse, polygonSplitter.reference);
 	}
 }

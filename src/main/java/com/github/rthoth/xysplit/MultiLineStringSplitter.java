@@ -5,7 +5,7 @@ import org.locationtech.jts.geom.*;
 import java.util.LinkedList;
 import java.util.List;
 
-public class MultiLineStringSplitter implements Function<MultiLineString, R> {
+public class MultiLineStringSplitter implements Function<MultiLineString, SplitResult> {
 
 	private final LineStringSplitter underlying;
 
@@ -27,14 +27,14 @@ public class MultiLineStringSplitter implements Function<MultiLineString, R> {
 		}
 	}
 
-	public R apply(MultiLineString lineString) {
+	public SplitResult apply(MultiLineString lineString) {
 
 		LinkedList<LineString> lts = new LinkedList<>(), gts = new LinkedList<>();
 		GeometryFactory factory = lineString.getFactory();
 
 		for (int i = 0; i < lineString.getNumGeometries(); i++) {
-			R r = underlying.apply((LineString) lineString.getGeometryN(i));
-			add(r.lt, lts);
+			SplitResult splitResult = underlying.apply((LineString) lineString.getGeometryN(i));
+			add(splitResult.lt, lts);
 		}
 
 		Geometry lt = (lts.size() > 1) ?
@@ -45,6 +45,6 @@ public class MultiLineStringSplitter implements Function<MultiLineString, R> {
 			factory.createMultiLineString(gts.toArray(new LineString[gts.size()])) :
 			gts.get(0);
 		
-		return R.from(lt, gt, underlying.reference);
+		return new SplitResult(lt, gt, underlying.reference);
 	}
 }
