@@ -22,29 +22,24 @@ public class MultiLineStringSplitter implements Function<MultiLineString, SplitR
 					geometries.add((LineString) geometry.getGeometryN(i));
 				}
 			} else {
-				throw new TopologyException("Invalid lineString!");
+				throw new TopologyException(String.format("Invalid Geometry! It should be a LineString, but it was %s!", geometry.getClass().getSimpleName()));
 			}
 		}
 	}
 
 	public SplitResult apply(MultiLineString lineString) {
 
-		LinkedList<LineString> lts = new LinkedList<>(), gts = new LinkedList<>();
-		GeometryFactory factory = lineString.getFactory();
+		LinkedList<LineString> lt = new LinkedList<>(), gt = new LinkedList<>();
 
 		for (int i = 0; i < lineString.getNumGeometries(); i++) {
 			SplitResult splitResult = underlying.apply((LineString) lineString.getGeometryN(i));
-			add(splitResult.lt, lts);
+			add(splitResult.lt, lt);
+			add(splitResult.gt, gt);
 		}
 
-		Geometry lt = (lts.size() > 1) ?
-			factory.createMultiLineString(lts.toArray(new LineString[lts.size()])) :
-			lts.get(0);
+		MultiLineString ltResponse = lineString.getFactory().createMultiLineString(lt.toArray(new LineString[0]));
+		MultiLineString gtResponse = lineString.getFactory().createMultiLineString(gt.toArray(new LineString[0]));
 
-		Geometry gt = (gts.size() > 1) ?
-			factory.createMultiLineString(gts.toArray(new LineString[gts.size()])) :
-			gts.get(0);
-		
-		return new SplitResult(lt, gt, underlying.reference);
+		return new SplitResult(ltResponse, gtResponse, underlying.reference);
 	}
 }

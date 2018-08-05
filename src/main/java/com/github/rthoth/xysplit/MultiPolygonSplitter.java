@@ -13,10 +13,10 @@ import org.locationtech.jts.geom.TopologyException;
 
 class MultiPolygonSplitter implements Function<MultiPolygon, SplitResult> {
 
-   private final PolygonSplitter polygonSplitter;
+	private final PolygonSplitter polygonSplitter;
 
 	public MultiPolygonSplitter(Reference reference) {
-	   polygonSplitter = new PolygonSplitter(reference);
+		polygonSplitter = new PolygonSplitter(reference);
 	}
 
 	private void add(Geometry geometry, List<Polygon> polygons) {
@@ -25,10 +25,11 @@ class MultiPolygonSplitter implements Function<MultiPolygon, SplitResult> {
 				polygons.add((Polygon) geometry);
 			else if (geometry instanceof MultiPolygon) {
 				for (int i = 0; i < geometry.getNumGeometries(); i++) {
-					polygons.add((Polygon) geometry.getGeometryN(i));
+					if (!geometry.getGeometryN(i).isEmpty())
+						polygons.add((Polygon) geometry.getGeometryN(i));
 				}
-			} else if (geometry != null) {
-				throw new TopologyException("Invalid polygon!");
+			} else {
+				throw new TopologyException(String.format("Invalid Geometry! It should be a Polygon, but it was %s!", geometry.getClass().getSimpleName()));
 			}
 		}
 	}
@@ -37,7 +38,7 @@ class MultiPolygonSplitter implements Function<MultiPolygon, SplitResult> {
 
 		LinkedList<Polygon> lt = new LinkedList<>(), gt = new LinkedList<>();
 
-	   for (int index = 0; index < multiPolygon.getNumGeometries(); index++) {
+		for (int index = 0; index < multiPolygon.getNumGeometries(); index++) {
 			SplitResult splitResult = polygonSplitter.apply((Polygon) multiPolygon.getGeometryN(index));
 			add(splitResult.lt, lt);
 			add(splitResult.gt, gt);
@@ -45,9 +46,9 @@ class MultiPolygonSplitter implements Function<MultiPolygon, SplitResult> {
 
 		GeometryFactory factory = multiPolygon.getFactory();
 
-		MultiPolygon ltResponse = factory.createMultiPolygon(lt.toArray(new Polygon[lt.size()]));
-		MultiPolygon gtResponse = factory.createMultiPolygon(gt.toArray(new Polygon[gt.size()]));
-		
+		MultiPolygon ltResponse = factory.createMultiPolygon(lt.toArray(new Polygon[0]));
+		MultiPolygon gtResponse = factory.createMultiPolygon(gt.toArray(new Polygon[0]));
+
 		return new SplitResult(ltResponse, gtResponse, polygonSplitter.reference);
 	}
 }

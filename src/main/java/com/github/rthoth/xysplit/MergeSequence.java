@@ -1,6 +1,7 @@
 package com.github.rthoth.xysplit;
 
 import org.locationtech.jts.geom.CoordinateSequence;
+import org.locationtech.jts.geom.TopologyException;
 
 import java.util.*;
 
@@ -121,7 +122,6 @@ public abstract class MergeSequence {
 			}
 
 			cleanUp(nodes);
-
 		}
 
 		return nodes;
@@ -165,6 +165,9 @@ public abstract class MergeSequence {
 					nodes.addLast(nodes.pollFirst());
 				}
 			}
+
+			if (nodes.size() % 2 == 1)
+				throw new TopologyException("");
 		}
 
 		@Override

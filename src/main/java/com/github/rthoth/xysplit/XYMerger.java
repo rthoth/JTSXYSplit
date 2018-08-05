@@ -7,8 +7,9 @@ import org.locationtech.jts.geom.Polygon;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.function.BiFunction;
 
-public class XYMerger {
+public class XYMerger implements BiFunction<Geometry, Geometry, Geometry> {
 
 	private final Reference reference;
 	

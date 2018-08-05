@@ -24,12 +24,22 @@ public class XYDefinitions {
 
 	public static final Decider X_DECIDER = (coordinates, index, position) -> {
 		double x = coordinates.getX(index);
-		if (x < position)
-			return Side.LT;
-		else if (x > position)
-			return Side.GT;
-		else
-			return Side.EQ;
+		switch (Double.compare(x, position)) {
+			case -1:
+				return Side.LT;
+
+			case 1:
+				return Side.GT;
+
+			default:
+				return Side.EQ;
+		}
+//		if (x < position)
+//			return Side.LT;
+//		else if (x > position)
+//			return Side.GT;
+//		else
+//			return Side.EQ;
 	};
 
 	public static final Interpolator X_INTERPOLATOR = (xa, ya, xb, yb, position) -> {

@@ -5,22 +5,12 @@ import java.util.Map;
 
 public abstract class DIMap<T> {
 
-	public abstract DIMap<T> copy();
-
 	public static class Hash<T> extends DIMap<T> {
 
 		public Hash() {
 			super(new HashMap<>());
 		}
 
-		private Hash(Map<T, T> map) {
-			super(map);
-		}
-
-		@Override
-		public DIMap<T> copy() {
-			return new Hash<>(new HashMap<>(underlying));
-		}
 	}
 
 	protected final Map<T, T> underlying;

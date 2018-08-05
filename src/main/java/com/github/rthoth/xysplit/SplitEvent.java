@@ -3,22 +3,31 @@ package com.github.rthoth.xysplit;
 import org.locationtech.jts.geom.Coordinate;
 import org.locationtech.jts.geom.CoordinateSequence;
 
-public class SplitEvent {
+import java.util.Comparator;
+
+public class SplitEvent implements Comparable<SplitEvent> {
+
+	public static final Comparator<SplitEvent> POSITION_COMPARATOR = (a, b) -> Double.compare(a.position, b.position);
+
+	public static final Comparator<SplitEvent> INDEX_COMPARATOR = (a, b) -> a.index - b.index;
 
 	public final Coordinate coordinate;
-	public final CoordinateSequence coordinates;
 	public final int index;
 	public final Location location;
-	
-	public SplitEvent(int index, Location location, Coordinate coordinate) {
-		this(index, location, coordinate, null);
-	}
+	public final double position;
+	public final CoordinateSequence sequence;
 
-	public SplitEvent(int index, Location location, Coordinate coordinate, CoordinateSequence coordinates) {
+	public SplitEvent(int index, double position, Location location, Coordinate coordinate, CoordinateSequence sequence) {
 		this.index = index;
 		this.location = location;
 		this.coordinate = coordinate;
-		this.coordinates = coordinates;
+		this.sequence = sequence;
+		this.position = position;
+	}
+
+	@Override
+	public int compareTo(SplitEvent other) {
+		return Double.compare(position, other.position);
 	}
 
 	public boolean equals(Object obj) {
@@ -26,8 +35,8 @@ public class SplitEvent {
 			SplitEvent other = (SplitEvent) obj;
 
 			return index == other.index
-				&& location == other.location
-				&& (coordinate == other.coordinate || (coordinate != null && coordinate.equals(other.coordinate)));
+							&& location == other.location
+							&& (coordinate == other.coordinate || (coordinate != null && coordinate.equals(other.coordinate)));
 		} else {
 			return false;
 		}
@@ -38,18 +47,14 @@ public class SplitEvent {
 	}
 
 	public Coordinate getCoordinate() {
-		return coordinate != null ? coordinate : coordinates.getCoordinate(index);
+		return coordinate != null ? coordinate : sequence.getCoordinate(index);
 	}
 
 	public String toString() {
-		return String.format("Event(%d, %s, %s)", index, location, coordinate);
+		return String.format("Event(i=%d, p=%f, l=%s, c=%s)", index, position, location, coordinate);
 	}
 
-	public double x() {
-		return coordinate != null ? coordinate.x : coordinates.getX(index);
-	}
-
-	public double y() {
-		return coordinate != null ? coordinate.y : coordinates.getY(index);
+	public SplitEvent withLocation(Location location) {
+		return new SplitEvent(index, position, location, coordinate, sequence);
 	}
 }

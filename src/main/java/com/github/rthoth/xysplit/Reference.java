@@ -24,7 +24,7 @@ public class Reference {
 	}
 
 	public Side classify(CoordinateSequence sequence, int index) {
-		return xy.classify(sequence, index, position);
+		return xy.classify(sequence, index, position, 1e-9);
 	}
 
 	public Side classify(CoordinateSequence sequence, int index, double offset) {

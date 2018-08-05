@@ -14,7 +14,7 @@ public abstract class RangeMap<T> {
 	public boolean intersects(double start, double stop) {
 		assert start < stop;
 		Map.Entry<Double, Range<T>> entry = underlying.lowerEntry(stop);
-		return entry != null && entry.getValue().stop <= start;
+		return entry != null && entry.getValue().stop > start;
 	}
 
 	public T get(double position) {

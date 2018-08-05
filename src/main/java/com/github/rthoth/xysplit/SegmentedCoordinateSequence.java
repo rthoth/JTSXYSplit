@@ -75,6 +75,7 @@ public class SegmentedCoordinateSequence implements CoordinateSequence {
 
 	@Override
 	public Coordinate[] toCoordinateArray() {
+		// TODO: Refactor!
 		Coordinate[] array = new Coordinate[size];
 		for (int i = 0; i < size; i++)
 			array[i] = getSequence(i).getCoordinate(i);
@@ -99,7 +100,7 @@ public class SegmentedCoordinateSequence implements CoordinateSequence {
 
 	@Override
 	public CoordinateSequence copy() {
-		return this;
+		throw new UnsupportedOperationException();
 	}
 
 	@Override

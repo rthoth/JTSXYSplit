@@ -9,33 +9,47 @@ import java.util.function.BiFunction;
 
 public class Parallel {
 
-	public static class SplitStep {
-		public final SplitResult _1;
-		public final SplitResult _2;
-
-		public SplitStep(SplitResult _1, SplitResult _2) {
-			this._1 = _1;
-			this._2 = _2;
-		}
-	}
-
 	public static final ExecutorService EXECUTOR = ForkJoinPool.commonPool();
 
-	private static final BiFunction<Geometry, Geometry, Geometry> INTERSECTION = (a, b) -> new OverlayOp(a, b).getResultGeometry(OverlayOp.INTERSECTION);
+	public static final XY DEFAULT_START = XY.X;
 
-	private static final BiFunction<Geometry, Geometry, Geometry> UNION = (a, b) -> new OverlayOp(a, b).getResultGeometry(OverlayOp.UNION);
+	public static Strategy level(int value) {
 
-	public static Future<Geometry> intersection(Geometry g1, Geometry g2, int maxCoordinates) {
-		return intersection(g1, g2, maxCoordinates, XY.X);
+		return new Level(value);
 	}
 
-	public static Future<Geometry> intersection(Geometry g1, Geometry g2, int maxCoordinates, XY xy) {
-		return parallel(INTERSECTION, g1, g2, maxCoordinates, xy);
+		private static final BiFunction<Geometry, Geometry, Geometry> INTERSECTION = (a, b) -> OverlayOp.overlayOp(a, b, OverlayOp.INTERSECTION);
+
+	private static final BiFunction<Geometry, Geometry, Geometry> UNION = (a, b) -> OverlayOp.overlayOp(a, b, OverlayOp.UNION);
+
+	private static final BiFunction<Geometry, Geometry, Geometry> DIFFERENCE = (a, b) -> OverlayOp.overlayOp(a, b, OverlayOp.DIFFERENCE);
+
+	public static Future<Geometry> difference(Geometry g1, Geometry g2, Strategy strategy) {
+		return difference(g1, g2, XY.X, strategy);
 	}
 
-	public static CompletableFuture<Geometry> parallel(final BiFunction<Geometry, Geometry, Geometry> function, final Geometry g1, final Geometry g2, final int maxCoordinates, final XY xy) {
-		final int total = g1.getNumPoints() + g2.getNumPoints();
-		if (total <= maxCoordinates) {
+	public static Future<Geometry> difference(Geometry g1, Geometry g2, XY xy, Strategy strategy) {
+		return parallel(DIFFERENCE, g1, g2, xy, strategy);
+	}
+
+	public static Future<Geometry> intersection(Geometry g1, Geometry g2, Strategy strategy) {
+		return intersection(g1, g2, DEFAULT_START, strategy);
+	}
+
+	public static Future<Geometry> intersection(Geometry g1, Geometry g2, XY xy, Strategy strategy) {
+		return parallel(INTERSECTION, g1, g2, xy, strategy);
+	}
+
+	public static Future<Geometry> union(Geometry g1, Geometry g2, Strategy strategy) {
+		return union(g1, g2, DEFAULT_START, strategy);
+	}
+
+	public static Future<Geometry> union(Geometry g1, Geometry g2, XY xy, Strategy strategy) {
+		return parallel(UNION, g1, g2, xy, strategy);
+	}
+
+	public static CompletableFuture<Geometry> parallel(final BiFunction<Geometry, Geometry, Geometry> function, final Geometry g1, final Geometry g2, final XY xy, final Strategy strategy) {
+		if (strategy.shouldSplit(g1, g2)) {
 			return CompletableFuture.supplyAsync(() -> function.apply(g1, g2), EXECUTOR);
 		} else {
 
@@ -49,23 +63,57 @@ public class Parallel {
 			CompletableFuture<SplitResult> fSplit1 = CompletableFuture.supplyAsync(() -> splitter.apply(g1), EXECUTOR);
 			CompletableFuture<SplitResult> fSplit2 = CompletableFuture.supplyAsync(() -> splitter.apply(g2), EXECUTOR);
 
-			CompletableFuture<SplitStep> splitStep = fSplit1
-							.thenCombineAsync(fSplit2, (s1, s2) -> new SplitStep(s1, s2), EXECUTOR);
+			final XY inverted = xy.invert();
+			final Strategy nextStrategy = strategy.next();
 
-			XY inverted = xy.invert();
+			CompletableFuture<Geometry> lt = fSplit1
+							.thenCombineAsync(fSplit2, (s1, s2) -> new GeometryPair(s1.lt, s2.lt), EXECUTOR)
+							.thenComposeAsync(pair -> parallel(function, pair._1, pair._2, inverted, nextStrategy));
 
-			CompletableFuture<Geometry> lt = splitStep.thenComposeAsync(step -> parallel(function, step._1.lt, step._2.lt, maxCoordinates, inverted), EXECUTOR);
-			CompletableFuture<Geometry> gt = splitStep.thenComposeAsync(step -> parallel(function, step._1.gt, step._2.gt, maxCoordinates, inverted), EXECUTOR);
+			CompletableFuture<Geometry> gt = fSplit1
+							.thenCombineAsync(fSplit2, (s1, s2) -> new GeometryPair(s1.gt, s2.gt), EXECUTOR)
+							.thenComposeAsync(pair -> parallel(function, pair._1, pair._2, inverted, nextStrategy));
 
 			return lt.thenCombineAsync(gt, (gLT, gGT) -> new XYMerger(reference).apply(gLT, gGT), EXECUTOR);
 		}
 	}
+	public static class GeometryPair {
 
-	public static Future<Geometry> union(Geometry g1, Geometry g2, int maxCoordinates) {
-		return union(g1, g2, maxCoordinates, XY.X);
+
+		public final Geometry _1;
+
+		public final Geometry _2;
+
+		public GeometryPair(Geometry _1, Geometry _2) {
+			this._1 = _1;
+			this._2 = _2;
+		}
+
 	}
+	interface Strategy {
 
-	public static Future<Geometry> union(Geometry g1, Geometry g2, int maxCoordinates, XY xy) {
-		return parallel(UNION, g1, g2, maxCoordinates, xy);
+
+		boolean shouldSplit(Geometry g1, Geometry g2);
+
+		Strategy next();
+
+	}
+	public static class Level implements Strategy {
+
+		private final int value;
+
+		public Level(int value) {
+			this.value = value;
+		}
+
+		@Override
+		public boolean shouldSplit(Geometry g1, Geometry g2) {
+			return value == 0;
+		}
+
+		@Override
+		public Strategy next() {
+			return new Level(value - 1);
+		}
 	}
 }

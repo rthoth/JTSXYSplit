@@ -103,11 +103,9 @@ public class PolygonMerger extends GeometryMerger {
 				}
 			}
 
-			if (!nodeBoundary.isEmpty()) {
-				for (MergeEvent.Node node : nodeBoundary) {
-					if (node.location == Location.IN)
-						makeHole(node);
-				}
+			for (MergeEvent.Node node : nodeBoundary) {
+				if (node.location == Location.IN)
+					makeHole(node);
 			}
 
 			Consumer<CoordinateSequence> consumer = sequence -> {
@@ -131,7 +129,6 @@ public class PolygonMerger extends GeometryMerger {
 		}
 
 		private Poly makePoly(final MergeEvent origin) {
-
 			// It checks if the new shell is inside another shell, in this case is a hole!
 			final Poly container = intersections.get(origin.position);
 			final CoordinateSequenceBuilder builder = new CoordinateSequenceBuilder();
@@ -139,14 +136,14 @@ public class PolygonMerger extends GeometryMerger {
 			final HashSet<Poly> visitedPolies = new HashSet<>();
 
 			Side side = origin.nextSide(Side.LT);
-			MergeEvent currentEvent = origin;
+			MergeEvent nextEvent = origin;
 
-			final MergeEvent.Node originNode = currentEvent.getNode(side);
+			final MergeEvent.Node originNode = nextEvent.getNode(side);
 			MergeEvent.Node startNode = originNode;
 
 			do {
-				if (currentEvent != null)
-					visitedEvents.add(currentEvent);
+				if (nextEvent != null)
+					visitedEvents.add(nextEvent);
 
 				visitedPolies.add(sequenceToPoly.get(startNode.sequence));
 
@@ -155,12 +152,12 @@ public class PolygonMerger extends GeometryMerger {
 				nodeBoundary.remove(startNode);
 				nodeBoundary.remove(stopNode);
 
-				currentEvent = mergeSequence.getEvent(stopNode);
+				nextEvent = mergeSequence.getEvent(stopNode);
 				final int limit = startNode.sequence.size() - 1;
 
 				if (startNode.location == Location.IN) {
 					int stopIndex = (stopNode.index - 1) % limit;
-					if (currentEvent != null) {
+					if (nextEvent != null) {
 						if (stopIndex < 0)
 							stopIndex = limit + stopIndex;
 					} else {
@@ -170,35 +167,38 @@ public class PolygonMerger extends GeometryMerger {
 					builder.addRing(startNode.sequence, startNode.index, stopIndex, true);
 				} else {
 					int stopIndex = (stopNode.index + 1) % limit;
-					if (currentEvent == null) {
+					if (nextEvent == null) {
 						stopIndex = stopNode.index;
 					}
 
 					builder.addRing(startNode.sequence, startNode.index, stopIndex, false);
 				}
 
-				if (currentEvent != null) {
-					pendent.remove(currentEvent);
+				if (nextEvent != null) {
+					pendent.remove(nextEvent);
 					side = side.invert();
-					startNode = currentEvent.getNode(side);
+					startNode = nextEvent.getNode(side);
 				} else {
-					if (stopNode.position <= originNode.position) {
-						startNode = checkEvent(nodeBoundary.higher(stopNode));
-						if (startNode == null)
-							startNode = checkEvent(nodeBoundary.lower(stopNode));
-
-					} else {
-						startNode = checkEvent(nodeBoundary.lower(stopNode));
-						if (startNode == null)
+					if (!nodeBoundary.isEmpty()) {
+						if (stopNode.position <= originNode.position) {
 							startNode = checkEvent(nodeBoundary.higher(stopNode));
-					}
+							if (startNode == null)
+								startNode = checkEvent(nodeBoundary.lower(stopNode));
 
-					if (startNode != null) {
+						} else {
+							startNode = checkEvent(nodeBoundary.lower(stopNode));
+							if (startNode == null)
+								startNode = checkEvent(nodeBoundary.higher(stopNode));
+						}
+
 						side = nextSideFrom(startNode);
-					} else
-						throw new XYException.Merge(String.format("No way from %s!", stopNode));
+					} else {
+//						throw new XYException.Merge(String.format("No way from %s!", stopNode));
+
+						nextEvent = origin;
+					}
 				}
-			} while (currentEvent != origin);
+			} while (nextEvent != origin);
 
 			builder.add(originNode.getCoordinate());
 
