@@ -4,13 +4,11 @@ import org.locationtech.jts.geom.Coordinate;
 import org.locationtech.jts.geom.CoordinateSequence;
 import org.locationtech.jts.geom.TopologyException;
 
+import java.util.function.ToDoubleFunction;
+
 public class XYDefinitions {
 
 	public interface Decider {
-		Side apply(CoordinateSequence sequence, int index, double position);
-	}
-
-	public interface OffsetDecider {
 		Side apply(CoordinateSequence sequence, int index, double position, double offset);
 	}
 
@@ -19,28 +17,9 @@ public class XYDefinitions {
 	}
 
 	public interface OrdinateExtractor {
-		double get(CoordinateSequence sequence, int index);
+		double apply(CoordinateSequence sequence, int index);
 	}
 
-	public static final Decider X_DECIDER = (coordinates, index, position) -> {
-		double x = coordinates.getX(index);
-		switch (Double.compare(x, position)) {
-			case -1:
-				return Side.LT;
-
-			case 1:
-				return Side.GT;
-
-			default:
-				return Side.EQ;
-		}
-//		if (x < position)
-//			return Side.LT;
-//		else if (x > position)
-//			return Side.GT;
-//		else
-//			return Side.EQ;
-	};
 
 	public static final Interpolator X_INTERPOLATOR = (xa, ya, xb, yb, position) -> {
 		double d = xb - xa;
@@ -51,7 +30,7 @@ public class XYDefinitions {
 			throw new TopologyException(String.format("There is more an only point at x = %f!", position));
 	};
 
-	public static final OffsetDecider X_OFFSET_DECIDER = (sequence, index, position, offset) -> {
+	public static final Decider X_OFFSET_DECIDER = (sequence, index, position, offset) -> {
 		double x = sequence.getX(index);
 
 		if (x != position) {
@@ -63,16 +42,7 @@ public class XYDefinitions {
 
 	public static final OrdinateExtractor X_ORDINATE_EXTRACTOR = (sequence, index) -> sequence.getX(index);
 
-	public static final Decider Y_DECIDER = (coordinates, index, position) -> {
-		double y = coordinates.getY(index);
-
-		if (y < position)
-			return Side.LT;
-		else if (y > position)
-			return Side.GT;
-		else
-			return Side.EQ;
-	};
+	public static final ToDoubleFunction<Coordinate> X_ORDINATE_COORDINATE_EXTRACTOR = coordinate -> coordinate.x;
 
 	public static final Interpolator Y_INTERPOLATOR = (xa, ya, xb, yb, position) -> {
 		double d = yb - ya;
@@ -83,7 +53,7 @@ public class XYDefinitions {
 			throw new TopologyException(String.format("There is more an only point at y = %f!", position));
 	};
 
-	public static final OffsetDecider Y_OFFSET_DECIDER = (sequence, index, position, offset) -> {
+	public static final Decider Y_OFFSET_DECIDER = (sequence, index, position, offset) -> {
 		double y = sequence.getY(index);
 
 		if (y != position) {
@@ -94,4 +64,6 @@ public class XYDefinitions {
 	};
 
 	public static final OrdinateExtractor Y_ORDINATE_EXTRACTOR = (sequence, index) -> sequence.getY(index);
+
+	public static final ToDoubleFunction<Coordinate> Y_ORDINATE_COORDINATE_EXTRACTOR = coordinate -> coordinate.y;
 }

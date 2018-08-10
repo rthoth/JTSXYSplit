@@ -9,32 +9,62 @@ import java.util.stream.Collectors;
 
 public class CoordinateSequenceBuilder {
 
-	public class Builder {
+	public CoordinateSequence closeAndBuild() {
+		Builder first = builders.peekFirst();
+		return add(first.sequence.getCoordinate(first.start)).build();
+	}
 
-		private final boolean closed;
-		private final CoordinateSequence sequence;
-		private final boolean asc;
-		private final int start;
-		private final int stop;
+	public static class Builder {
 
-		public Builder(CoordinateSequence sequence, int start, int stop, boolean asc, boolean closed) {
+		protected final boolean closed;
+
+		protected final CoordinateSequence sequence;
+		protected final boolean forward;
+		protected final int start;
+		protected final int stop;
+
+		public Builder(CoordinateSequence sequence, int start, int stop, boolean forward, boolean closed) {
 			this.sequence = sequence;
 			this.start = start;
 			this.stop = stop;
-			this.asc = asc;
+			this.forward = forward;
 			this.closed = closed;
 		}
 
 		public CoordinateSequence build() {
 			int limit = closed ? sequence.size() - 1 : sequence.size();
-			return asc ? new CoordinateSequenceWindow.Asc(sequence, start, stop, limit) : new CoordinateSequenceWindow.Desc(sequence, start, stop, limit);
+			return forward ? new CoordinateSequenceWindow.ForwardWindow(sequence, start, stop, limit) : new CoordinateSequenceWindow.BackwardWindow(sequence, start, stop, limit);
+		}
+
+
+		public int size() {
+			if (forward) {
+				if (start <= stop) {
+					return stop - start + 1;
+				} else {
+					return (closed ? sequence.size() - 1 : sequence.size()) - start + stop + 1;
+				}
+			} else {
+				if (start >= stop) {
+					return start - stop + 1;
+				} else {
+					return (closed ? sequence.size() - 1 : sequence.size()) - stop + start + 1;
+				}
+			}
 		}
 	}
 
 	private final LinkedList<Builder> builders = new LinkedList<>();
+	private int size = 0;
+
+	private CoordinateSequenceBuilder add(Builder builder) {
+		size += builder.size();
+		builders.addLast(builder);
+		return this;
+	}
 
 	/**
-	 * It adds a opened sequence line string.
+	 * It adds a opened original line string.
 	 * @param coordinates
 	 * @return
 	 */
@@ -43,21 +73,23 @@ public class CoordinateSequenceBuilder {
 	}
 
 	public CoordinateSequenceBuilder add(boolean closed, Coordinate... coordinates) {
-		builders.add(new Builder(new CoordinateArraySequence(coordinates), 0, coordinates.length - 1, true, closed));
-		return this;
+		return add(new Builder(new CoordinateArraySequence(coordinates), 0, coordinates.length - 1, true, closed));
 	}
 
 	public boolean isEmpty() {
-		return false;
+		return builders.isEmpty();
 	}
 
 	public CoordinateSequence build() {
 		return new SegmentedCoordinateSequence(builders.stream().map(Builder::build).collect(Collectors.toList()));
 	}
 
-	public CoordinateSequenceBuilder addRing(CoordinateSequence sequence, int start, int stop, boolean asc) {
-		builders.add(new Builder(sequence, start, stop, asc, true));
-		return this;
+	public CoordinateSequenceBuilder addRing(CoordinateSequence sequence, int start, int stop, boolean forward) {
+		return add(new Builder(sequence, start, stop, forward, true));
+	}
+
+	public int size() {
+		return size;
 	}
 }
 

@@ -2,352 +2,475 @@ package com.github.rthoth.xysplit;
 
 import org.locationtech.jts.algorithm.RayCrossingCounter;
 import org.locationtech.jts.geom.*;
+import org.locationtech.jts.operation.valid.IsValidOp;
+import org.locationtech.jts.operation.valid.TopologyValidationError;
 
 import java.util.*;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
-import static com.github.rthoth.xysplit.Location.IN;
-import static com.github.rthoth.xysplit.Location.ON;
-import static com.github.rthoth.xysplit.Location.OUT;
-import static com.github.rthoth.xysplit.Side.EQ;
+import static com.github.rthoth.xysplit.Location.*;
+import static com.github.rthoth.xysplit.IO.I_O;
+import static com.github.rthoth.xysplit.IO.O_I;
+import static com.github.rthoth.xysplit.Side.GT;
 import static com.github.rthoth.xysplit.Side.LT;
-import static com.github.rthoth.xysplit.SplitEvent.POSITION_COMPARATOR;
+import static com.github.rthoth.xysplit.XY.X;
 import static org.locationtech.jts.geom.Location.BOUNDARY;
 import static org.locationtech.jts.geom.Location.INTERIOR;
 
 
-public class PolygonSplitter extends Splitter<Polygon> {
+public class PolygonSplitter extends AbstractSplitter<Polygon> {
 
-	public final Reference reference;
+	public PolygonSplitter(Reference reference, double offset) {
+		super(new SplitSequencer.Poly(reference, offset));
+	}
 
-	public PolygonSplitter(Reference reference) {
-		this.reference = reference;
+	public SplitResult split(Polygon polygon, Function<CoordinateSequence, SplitSequencer.Result> sequencer) {
+		CoordinateSequence shell = polygon.getExteriorRing().getCoordinateSequence();
+		SplitSequencer.Result shellSplitResult = sequencer.apply(shell);
+
+		ArrayList<Unity> ltHoles = new ArrayList<>(polygon.getNumInteriorRing());
+		ArrayList<Unity> gtHoles = new ArrayList<>(polygon.getNumInteriorRing());
+
+		for (int i = 0, l = polygon.getNumInteriorRing(); i < l; i++) {
+			CoordinateSequence sequence = polygon.getInteriorRingN(i).getCoordinateSequence();
+			SplitSequencer.Result holeSplitResult = sequencer.apply(sequence);
+
+			ltHoles.add(new Unity(holeSplitResult.lt, sequence));
+			gtHoles.add(new Unity(holeSplitResult.gt, sequence));
+		}
+
+		Geometry lt = new Splitter(LT, new Unity(shellSplitResult.lt, shell), ltHoles, polygon.getFactory()).result;
+		Geometry gt = new Splitter(GT, new Unity(shellSplitResult.gt, shell), gtHoles, polygon.getFactory()).result;
+
+		return new SplitResult(lt, gt);
 	}
 
 	public SplitResult apply(Polygon polygon) {
-
-		SeqBuilder shellBuilder = new SeqBuilder(polygon.getExteriorRing().getCoordinateSequence());
-
-		Geometry lt, gt;
-		if (!shellBuilder.isEmpty()) {
-			List<Seq> ltEvents = new LinkedList<>();
-			List<Seq> gtEvents = new LinkedList<>();
-
-			for (int i = 0, l = polygon.getNumInteriorRing(); i < l; i++) {
-				final SeqBuilder seqBuilder = new SeqBuilder(polygon.getInteriorRingN(i).getCoordinateSequence());
-				ltEvents.add(seqBuilder.lt);
-				gtEvents.add(seqBuilder.gt);
-			}
-
-			lt = new HalfPolygon(Side.LT, polygon, shellBuilder.lt, ltEvents).geometry;
-			gt = new HalfPolygon(Side.GT, polygon, shellBuilder.gt, gtEvents).geometry;
-
-		} else if (!polygon.isEmpty()) {
-			CoordinateSequence shell = polygon.getExteriorRing().getCoordinateSequence();
-			Side side = reference.classify(shell, 0);
-
-			for (int i = 0, l = shell.size(); side == EQ && i < l; i++) {
-				side = reference.classify(shell, i);
-			}
-
-			if (side == LT) {
-				lt = polygon;
-				gt = polygon.getFactory().createPolygon();
-			} else {
-				lt = polygon.getFactory().createPolygon();
-				gt = polygon;
-			}
-		} else {
-			gt = lt = polygon;
-		}
-
-		return new SplitResult(lt, gt, reference);
+		return split(polygon, sequencer);
 	}
 
-	private static class Seq {
+	@Override
+	public SplitResult apply(Polygon polygon, final int padding) {
+		return split(polygon, sequence -> sequencer.apply(sequence, padding));
+	}
 
-		public final CoordinateSequence sequence;
-		public final List<SplitEvent> events;
+	private class Unity {
 
-		public Seq(CoordinateSequence sequence, List<SplitEvent> events) {
-			this.sequence = sequence;
+		final List<SplitEvent> events;
+		protected final CoordinateSequence sequence;
+
+		Unity(List<SplitEvent> events, CoordinateSequence sequence) {
 			this.events = events;
+			this.sequence = sequence;
 		}
-
-		public boolean isEmpty() {
-			return events.isEmpty();
-		}
-
 	}
 
-	private class HalfPolygon {
+	private class Splitter {
 
-		public final Geometry geometry;
+		private final Geometry result;
+		private final NavigableSet<SplitEvent> boundary = new TreeSet<>(SplitEvent.POSITION_COMPARATOR);
 
-		private final TreeSet<SplitEvent> allEvents = new TreeSet<>(POSITION_COMPARATOR);
-		private final TreeSet<SplitEvent> boundary = new TreeSet<>(POSITION_COMPARATOR);
-		private final HashMap<SplitEvent, TreeSet<SplitEvent>> eventToSequence = new HashMap<>();
-		private final Side side;
+		private final Map<SplitEvent, NavigableSet<SplitEvent>> eventToEvents = new HashMap<>();
+		private final GeometryFactory factory;
 
-		public HalfPolygon(Side side, Polygon original, Seq shell, List<Seq> holes) {
+		private boolean forward;
+
+		private SplitEvent origin;
+		private SplitEvent start;
+		private SplitEvent stop;
+
+		private IO io;
+		private Side side;
+
+		private final LinkedList<Unity> untouched = new LinkedList<>();
+
+		Splitter(Side side, Unity shell, List<Unity> holes, GeometryFactory factory) {
 			this.side = side;
+			this.factory = factory;
 
-			boolean isInside = addToBoundary(shell.events);
+			if (shell.events.size() > 1) {
+				TreeSet<SplitEvent> events = new TreeSet<>(SplitEvent.INDEX_COMPARATOR);
 
-			if (isInside) {
-				LinkedList<Seq> untouchedHoles = new LinkedList<>();
-
-				for (Seq hole : holes) {
-					if (!addToBoundary(hole.events))
-						untouchedHoles.addLast(hole);
-				}
-
-				LinkedList<PolyBuilder> created = new LinkedList<>();
-
-				CoordinateSequence sequence;
-				while (!boundary.isEmpty()) {
-					T2<SplitEvent, Boolean> t2 = nextOrigin();
-					sequence = createShell(t2._1, t2._1.location == IN, t2._2);
-					if (sequence.size() > 3)
-						created.addLast(new PolyBuilder(sequence));
-					else
-						throw new UnsupportedOperationException();
-				}
-
-				// Searching holes positions
-
-				nextHole:
-				for (Seq hole : untouchedHoles) {
-					for (PolyBuilder builder : created) {
-						if (builder.addIfContains(hole)) {
-							continue nextHole;
-						}
+				for (SplitEvent event : shell.events) {
+					if (boundary.add(event))
+						events.add(event);
+					else {
+						removeColision(event, events);
 					}
 				}
 
-				if (created.size() > 1) {
-					List<Polygon> polygons = created
+				for (SplitEvent event : events)
+					eventToEvents.put(event, events);
+
+				for (Unity hole : holes) {
+					if (hole.events.size() > 0) {
+						events = new TreeSet<>(SplitEvent.INDEX_COMPARATOR);
+						for (SplitEvent event : hole.events) {
+							if (boundary.add(event))
+								events.add(event);
+							else {
+								removeColision(event, events);
+							}
+						}
+
+						for (SplitEvent event : events)
+							eventToEvents.put(event, events);
+
+					} else {
+						untouched.addLast(hole);
+					}
+				}
+
+				List<Polygon> ret = createPolygons(untouched);
+
+				if (ret.size() == 1) {
+					result = ret.get(0);
+				} else if (ret.size() > 1) {
+					result = factory.createMultiPolygon(ret.toArray(new Polygon[0]));
+				} else {
+					result = factory.createPolygon();
+				}
+			} else {
+				if (isInside(shell)) {
+					LinearRing[] _holes = holes
 									.stream()
-									.map(x -> x.build(original.getFactory()))
-									.collect(Collectors.toList());
+									.map(x -> factory.createLinearRing(x.sequence))
+									.toArray(i -> new LinearRing[i]);
 
-					geometry = original.getFactory().createMultiPolygon(polygons.toArray(new Polygon[0]));
+					result = factory.createPolygon(factory.createLinearRing(shell.sequence), _holes);
 				} else {
-					geometry = created.getFirst().build(original.getFactory());
+					result = factory.createPolygon();
 				}
+			}
+		}
+
+		private void removeColision(SplitEvent event, TreeSet<SplitEvent> events) {
+			SplitEvent other = boundary.ceiling(event);
+			if (other.position == event.position) {
+				boundary.remove(other);
+				events.remove(other);
 			} else {
-				Side lSide = reference.classify(shell.sequence, 0);
-				for (int i = 0, l = shell.sequence.size(); i < l && lSide == EQ; i++) {
-					lSide = reference.classify(shell.sequence, i);
+				throw new UnsupportedOperationException();
+			}
+		}
+
+		private <T> T getHigher(NavigableSet<T> set, T value) {
+			T ret = set.higher(value);
+			return ret != null ? ret : set.first();
+		}
+
+		private <T> T getLower(NavigableSet<T> set, T value) {
+			T ret = set.lower(value);
+			return ret != null ? ret : set.last();
+		}
+
+		private boolean isInside(Unity shell) {
+			for (int i = 0, l = shell.sequence.size(); i < l; i++) {
+				switch (sequencer.reference.classify(shell.sequence, i, sequencer.offset).location(side)) {
+					case IN:
+						return true;
+
+					case OUT:
+						return false;
 				}
-
-				if (lSide == side) {
-					geometry = original;
-				} else {
-					geometry = original.getFactory().createPolygon();
-				}
 			}
 
+			return false;
 		}
 
-		private void addSegment(SplitEvent start, SplitEvent stop, CoordinateSequenceBuilder builder) {
-			if (start.location == IN) {
-
-				if (start.coordinate != null)
-					builder.add(start.coordinate);
-
-				int stopIndex = stop.index != 0 ? stop.index - 1 : stop.sequence.size() - 2;
-				builder.addRing(start.sequence, start.index, stopIndex, true);
-
-				builder.add(stop.getCoordinate());
-
-			} else {
-
-				builder.add(start.getCoordinate());
-
-				int startIndex = start.index != 0 ? start.index - 1 : start.sequence.size() - 2;
-				builder.addRing(start.sequence, startIndex, stop.index, false);
-
-				if (stop.coordinate != null)
-					builder.add(stop.coordinate);
-
-			}
-		}
-
-		/**
-		 * @param events true when there is some IN/OUT event!
-		 * @return
-		 */
-		private boolean addToBoundary(List<SplitEvent> events) {
-			TreeSet<SplitEvent> set = new TreeSet<>(SplitEvent.INDEX_COMPARATOR);
-			int start = boundary.size();
-
-			for (SplitEvent evt : events) {
-				set.add(evt);
-				eventToSequence.put(evt, set);
-
-				allEvents.add(evt);
-				if (evt.location != ON)
-					boundary.add(evt);
-			}
-
-			return boundary.size() > start;
-		}
-
-		private CoordinateSequence createShell(final SplitEvent origin, boolean forward, boolean ascScanLine) {
-			SplitEvent start = origin, stop = nextEvent(origin, forward);
+		private Poly createPoly() {
+			searchOrigin();
+			start = origin;
 			CoordinateSequenceBuilder builder = new CoordinateSequenceBuilder();
-			boolean tryClose, shouldContinue;
 
 			do {
-				shouldContinue = false;
+				searchStop();
+
+				if (forward) {
+					if (start.coordinate != null)
+						builder.add(start.coordinate);
+
+					if (stop.coordinate != null) {
+						int stopIndex = stop.index != 0 ? stop.index - 1 : stop.sequence.size() - 2;
+						builder.addRing(start.sequence, start.index, stopIndex, forward);
+						builder.add(stop.coordinate);
+					} else {
+						builder.addRing(start.sequence, start.index, stop.index, forward);
+					}
+				} else {
+					if (start.coordinate != null) {
+
+						builder.add(start.coordinate);
+
+						int startIndex = start.index != 0 ? start.index - 1 : start.sequence.size() - 2;
+						builder.addRing(start.sequence, startIndex, stop.index, forward);
+
+						if (stop.coordinate != null)
+							builder.add(stop.coordinate);
+
+					} else {
+						builder.addRing(start.sequence, start.index, stop.index, forward);
+						if (stop.coordinate != null)
+							builder.add(stop.coordinate);
+					}
+				}
+
+				searchStart();
+
+			} while (start != origin);
+
+			Poly poly = new Poly(builder.closeAndBuild());
+
+			return poly;
+		}
+
+		private List<Polygon> createPolygons(Deque<Unity> untouched) {
+			LinkedList<Poly> ret = new LinkedList<>();
+
+			while (!boundary.isEmpty()) {
+				ret.add(createPoly());
+			}
+
+			nextHole:
+			for (Unity hole : untouched) {
+
+				curPoly:
+				for (Poly poly : ret) {
+					for (int i = 0, l = hole.sequence.size(); i < l; i++) {
+						int loc = RayCrossingCounter.locatePointInRing(hole.sequence.getCoordinate(i), poly.shell);
+						if (loc != BOUNDARY) {
+							if (loc == INTERIOR) {
+								poly.holes.add(hole.sequence);
+								continue nextHole;
+							} else {
+								break curPoly;
+							}
+						}
+					}
+				}
+			}
+
+			return ret.stream().map(Poly::build).collect(Collectors.toList());
+		}
+
+		private void searchOrigin() {
+			SplitEvent first = boundary.first();
+			SplitEvent last = boundary.last();
+
+			if (first.location != ON || last.location != ON) {
+				if (first.location != ON && last.location != ON) {
+					if (first.location == IN) {
+						origin = first;
+						io = O_I;
+					} else {
+						origin = last;
+						io = I_O;
+					}
+				} else if (last.location == ON) {
+					origin = first;
+					io = O_I;
+				} else {
+					origin = last;
+					io = I_O;
+				}
+			} else {
+				if (first.sequence.size() >= last.sequence.size()) {
+					origin = first;
+					io = O_I;
+				} else {
+					origin = last;
+					io = I_O;
+				}
+
+				breakOrigin();
+			}
+		}
+
+		private void breakOrigin() {
+			double product = crossProduct(origin);
+
+			if (sequencer.reference.xy == X) {
+				if (side == LT)
+					product *= io == O_I ? -1 : 1;
+				else
+					product *= io == O_I ? 1 : -1;
+			} else {
+				if (side == LT)
+					product *= io == O_I ? 1 : -1;
+				else
+					product *= io == O_I ? -1 : 1;
+			}
+
+			NavigableSet<SplitEvent> events = eventToEvents.get(origin);
+			events.remove(origin);
+			boundary.remove(origin);
+			eventToEvents.remove(origin);
+
+			if (product > 0) {
+				origin = origin.withLocation(IN);
+			} else if (product < 0) {
+				origin = origin.withLocation(OUT);
+			} else {
+				throw new UnsupportedOperationException();
+			}
+
+			boundary.add(origin);
+			events.add(origin);
+			eventToEvents.put(origin, events);
+		}
+
+		private void searchStart() {
+			start = null;
+			boundary.remove(stop);
+
+			if (stop != origin) {
+
 				if (stop.location != ON) {
-					addSegment(start, stop, builder);
-					boundary.remove(stop);
-					switch (POSITION_COMPARATOR.compare(origin, stop)) {
+					switch (io) {
+						case I_O:
+							start = getLower(boundary, stop);
+							break;
+
+						case O_I:
+							start = getHigher(boundary, stop);
+							break;
+					}
+
+					io = io.invert();
+				} else {
+
+					NavigableSet<SplitEvent> events = eventToEvents.get(stop);
+					SplitEvent next = forward ? getHigher(events, stop) : getLower(events, stop);
+
+					switch (Double.compare(next.position, stop.position)) {
 						case -1:
-							start = boundary.lower(stop);
+							if (io == I_O) {
+								start = stop;
+							} else {
+								SplitEvent newStop = split(stop, events);
+								start = getHigher(boundary, newStop);
+								io = io.invert();
+							}
 							break;
 
 						case 1:
-							start = boundary.higher(stop);
+							if (io == O_I) {
+								start = stop;
+							} else {
+								SplitEvent newStop = split(stop, events);
+								start = getLower(boundary, newStop);
+								io = io.invert();
+							}
 							break;
-
-						default:
-							throw new UnsupportedOperationException();
 					}
 
-					if (start != origin && start.location != ON) {
-						forward = start.location == IN;
-						stop = nextEvent(start, forward);
-						boundary.remove(start);
-					}
-				} else {
-					if (ascScanLine)
-						tryClose = POSITION_COMPARATOR.compare(stop, origin) == 1;
-					else
-						tryClose = POSITION_COMPARATOR.compare(stop, origin) == -1;
-
-					if (tryClose) {
-						SplitEvent maybeOrigin = ascScanLine ? boundary.lower(stop) : boundary.higher(stop);
-
-						if (maybeOrigin == origin || !inSameSequence(maybeOrigin, origin)) {
-							addSegment(start, stop, builder);
-
-							// Add a new origin, this point breaks the new polygon.
-							SplitEvent newOrigin = stop.withLocation(start.location);
-							boundary.add(newOrigin);
-
-							if (maybeOrigin != origin)
-								boundary.remove(maybeOrigin);
-
-							allEvents.remove(stop);
-							allEvents.add(newOrigin);
-							eventToSequence.put(newOrigin, eventToSequence.get(start));
-							start = maybeOrigin;
-							forward = start.location == IN;
-							stop = nextEvent(start, forward);
-							continue;
-						}
-					}
-
-					stop = nextEvent(stop, forward);
-					shouldContinue = true;
 				}
-			} while (start != origin || shouldContinue);
 
+				boundary.remove(start);
+			} else {
+				start = origin;
+			}
+		}
+
+		private SplitEvent split(SplitEvent stop, NavigableSet<SplitEvent> events) {
+			SplitEvent newStop = stop.withLocation(forward ? IN : OUT);
+			boundary.add(newStop);
+			events.remove(stop);
+			events.add(newStop);
+			eventToEvents.put(newStop, events);
+
+			return newStop;
+		}
+
+		private void searchStop() {
+			stop = null;
+			NavigableSet<SplitEvent> events = eventToEvents.get(start);
+
+			if (start.location != ON) {
+				if (start.location == IN) {
+					forward = true;
+					stop = getHigher(events, start);
+				} else {
+					forward = false;
+					stop = getLower(events, start);
+				}
+
+				io = io.invert();
+			} else {
+				double product = crossProduct(start);
+				if (sequencer.reference.xy == X) {
+					if (side == LT)
+						product *= io == I_O ? -1 : 1;
+					else
+						product *= io == I_O ? 1 : -1;
+				} else {
+					if (side == LT)
+						product *= io == I_O ? 1 : -1;
+					else
+						product *= io == I_O ? -1 : 1;
+				}
+
+				if (product > 0) {
+					forward = true;
+					stop = getHigher(events, start);
+				} else if (product < 0) {
+					forward = false;
+					stop = getLower(events, start);
+				} else {
+					throw new UnsupportedOperationException();
+				}
+
+				if (stop == start) {
+					breakRingOnStart();
+				}
+			}
+		}
+
+		private void breakRingOnStart() {
+			NavigableSet<SplitEvent> events = eventToEvents.get(start);
+			SplitEvent newEvent;
+
+			// remember, start == stop
 			boundary.remove(start);
-			return builder.add(origin.getCoordinate()).build();
-		}
-
-		private boolean inSameSequence(SplitEvent a, SplitEvent b) {
-			return eventToSequence.get(a) == eventToSequence.get(b);
-		}
-
-		private SplitEvent nextEvent(SplitEvent start, boolean forward) {
-			TreeSet<SplitEvent> sequence = eventToSequence.get(start);
-			SplitEvent next;
+			events.remove(start);
 
 			if (forward) {
-				next = sequence.higher(start);
-				if (next == null)
-					next = sequence.first();
+				// creating new stop
+				newEvent = new SplitEvent(start.index, start.position, OUT, start.getCoordinate(), start.sequence);
+				stop = newEvent;
 			} else {
-				next = sequence.lower(start);
-				if (next == null)
-					next = sequence.last();
+				// creating new start
+				newEvent = new SplitEvent(start.index, start.position, IN, start.getCoordinate(), start.sequence);
+				start = newEvent;
 			}
 
-			return next;
+			boundary.add(newEvent);
+			events.add(newEvent);
 		}
 
-		private T2<SplitEvent, Boolean> nextOrigin() {
-			if (boundary.first().location == IN) {
-				return new T2(boundary.first(), true);
-			} else {
-				return new T2(boundary.last(), false);
-			}
-		}
+		private class Poly {
 
-		private class PolyBuilder {
+			final CoordinateSequence shell;
 
-			public final CoordinateSequence shell;
-			public final LinkedList<CoordinateSequence> holes = new LinkedList<>();
+			final LinkedList<CoordinateSequence> holes = new LinkedList<>();
 
-			public PolyBuilder(CoordinateSequence shell) {
+			Poly(CoordinateSequence shell) {
 				this.shell = shell;
 			}
 
-			public boolean addIfContains(Seq hole) {
-				CoordinateSequence sequence = hole.sequence;
-				Location location = reference.classify(sequence, 0).location(side);
-
-				if (location == OUT)
-					return false;
-
-				int pointLocation = RayCrossingCounter.locatePointInRing(sequence.getCoordinate(0), shell);
-				for (int i = 1, l = sequence.size(); i < l && pointLocation == BOUNDARY; i++) {
-					location = reference.classify(sequence, i).location(side);
-					if (location == OUT)
-						return false;
-					pointLocation = RayCrossingCounter.locatePointInRing(sequence.getCoordinate(i), shell);
-				}
-
-				if (pointLocation == INTERIOR) {
-					holes.addLast(sequence);
-					return true;
-				} else
-					return false;
-			}
-
-			public Polygon build(GeometryFactory factory) {
+			Polygon build() {
 				LinearRing shell = factory.createLinearRing(this.shell);
-				LinearRing[] holes = new LinearRing[this.holes.size()];
-				for (int i = 0; i < holes.length; i++) {
-					holes[i] = factory.createLinearRing(this.holes.get(i));
-				}
-
+				LinearRing[] holes = this.holes.stream().map(factory::createLinearRing).toArray(LinearRing[]::new);
 				return factory.createPolygon(shell, holes);
+//				TopologyValidationError error = new IsValidOp(ret).getValidationError();
+//
+//				if (error != null)
+//					throw new TopologyException(error.getMessage(), error.getCoordinate());
+//
+//				return ret;
 			}
 		}
-	}
-
-	private class SeqBuilder {
-
-		public final Seq lt;
-
-		public final Seq gt;
-
-		public SeqBuilder(CoordinateSequence sequence) {
-			SplitSequence splitSequence = new SplitSequence.Poly(reference, sequence);
-			lt = new Seq(sequence, splitSequence.ltEvents);
-			gt = new Seq(sequence, splitSequence.gtEvents);
-		}
-
-		public boolean isEmpty() {
-			return lt.isEmpty() || gt.isEmpty();
-		}
 
 	}
-
 }

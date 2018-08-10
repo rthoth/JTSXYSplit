@@ -1,16 +1,17 @@
 package com.github.rthoth.xysplit;
 
-import java.util.function.Function;
 import org.locationtech.jts.geom.*;
+
 import java.util.LinkedList;
 import java.util.List;
+import java.util.function.Function;
 
 public class MultiLineStringSplitter implements Function<MultiLineString, SplitResult> {
 
 	private final LineStringSplitter underlying;
 
-	public MultiLineStringSplitter(Reference reference) {
-	   underlying = new LineStringSplitter(reference);
+	public MultiLineStringSplitter(Reference reference, double offset) {
+	   underlying = new LineStringSplitter(reference, offset);
 	}
 
 	private void add(Geometry geometry, List<LineString> geometries) {
@@ -40,6 +41,10 @@ public class MultiLineStringSplitter implements Function<MultiLineString, SplitR
 		MultiLineString ltResponse = lineString.getFactory().createMultiLineString(lt.toArray(new LineString[0]));
 		MultiLineString gtResponse = lineString.getFactory().createMultiLineString(gt.toArray(new LineString[0]));
 
-		return new SplitResult(ltResponse, gtResponse, underlying.reference);
+		return new SplitResult(ltResponse, gtResponse);
+	}
+
+	public SplitResult applyPadding(MultiLineString multiLineString, int padding) {
+		throw new UnsupportedOperationException();
 	}
 }

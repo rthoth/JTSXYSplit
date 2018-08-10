@@ -1,9 +1,10 @@
 package com.github.rthoth.xysplit;
 
+import java.util.Iterator;
 import java.util.Map;
 import java.util.NavigableMap;
 
-public abstract class RangeMap<T> {
+public abstract class RangeMap<T> implements Iterable<T> {
 
 	protected final NavigableMap<Double, Range<T>> underlying;
 
@@ -12,7 +13,7 @@ public abstract class RangeMap<T> {
 	}
 
 	public boolean intersects(double start, double stop) {
-		assert start < stop;
+		assert start < stop : String.format("%f should be less than %f!", start, stop);
 		Map.Entry<Double, Range<T>> entry = underlying.lowerEntry(stop);
 		return entry != null && entry.getValue().stop > start;
 	}
@@ -27,9 +28,30 @@ public abstract class RangeMap<T> {
 			return null;
 	}
 
-	public void add(double start, double stop, T value) {
-		if (!intersects(start, stop))
+	public boolean add(double start, double stop, T value) {
+		if (!intersects(start, stop)) {
 			underlying.put(start, new Range<>(start, stop, value));
+			return true;
+		} else
+			return false;
+	}
+
+	public Iterator<T> iterator() {
+		return underlying.values().stream().map(x -> x.value).iterator();
+	}
+
+	@Override
+	public String toString() {
+		StringBuilder ret = new StringBuilder();
+		Iterator<Range<T>> iterator = underlying.values().iterator();
+
+		while (iterator.hasNext()) {
+			ret.append(iterator.next());
+			if (iterator.hasNext())
+				ret.append(", ");
+		}
+
+		return ret.toString();
 	}
 
 	public static class Range<T> {
@@ -42,6 +64,11 @@ public abstract class RangeMap<T> {
 			this.start = start;
 			this.stop = stop;
 			this.value = value;
+		}
+
+		@Override
+		public String toString() {
+			return "(" + start + ", " + stop + ", " + value + ")";
 		}
 	}
 

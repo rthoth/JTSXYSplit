@@ -2,10 +2,13 @@ package com.github.rthoth.xysplit;
 
 import static com.github.rthoth.xysplit.Assertions.*;
 
+import org.junit.FixMethodOrder;
 import org.junit.Test;
+import org.junit.runners.MethodSorters;
 import org.locationtech.jts.geom.Geometry;
 
 
+@FixMethodOrder(MethodSorters.NAME_ASCENDING)
 public class PolygonSplitTest extends PolygonTest {
 
 	@Test
@@ -136,5 +139,19 @@ public class PolygonSplitTest extends PolygonTest {
 		SplitResult result = new XYSplitter(REF_Y_0).apply(POLYGON_0);
 		checkThat(result.lt).isEqualsTopo(wkt("MULTIPOLYGON (((-4 0, -4 -4, 1 -3, -2 -2, -2 0, -4 0)), ((2.3333333333333335 0, 3 -1, 3.5 0, 2.3333333333333335 0)))"));
 		checkThat(result.gt).isEqualsTopo(wkt("POLYGON ((3.5 0, 4 1, 1 5, -4 3, -4 0, -2 0, -2 1, 1 2, 2.3333333333333335 0, 3.5 0))"));
+	}
+
+	@Test
+	public void polygon3_y() {
+		SplitResult result = new XYSplitter(Reference.y(0)).apply(POLYGON_3);
+		checkThat(result.lt).isEqualsTopo(wkt("POLYGON ((0 0, -2 -2, 0 -4, -2 -3, -2 -5, 0 -4, -2 -6, -6 -4, -2 0, 0 0))"));
+		checkThat(result.gt).isEqualsTopo(wkt("POLYGON ((-2 0, 4 6, 6 2, 4 0, 5 2, 3 2, 4 0, 2 2, 0 0, -2 0))"));
+	}
+
+	@Test
+	public void polygon3_x() {
+		SplitResult result = new XYSplitter(Reference.x(0)).apply(POLYGON_3);
+		checkThat(result.lt).isEqualsTopo(wkt("POLYGON ((0 0, -2 -2, 0 -4, -2 -3, -2 -5, 0 -4, -2 -6, -6 -4, 0 2, 0 0))"));
+		checkThat(result.gt).isEqualsTopo(wkt("POLYGON ((0 2, 4 6, 6 2, 4 0, 5 2, 3 2, 4 0, 2 2, 0 0, 0 2))"));
 	}
 }

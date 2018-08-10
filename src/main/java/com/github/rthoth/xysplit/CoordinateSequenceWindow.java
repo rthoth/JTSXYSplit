@@ -22,9 +22,9 @@ public abstract class CoordinateSequenceWindow implements CoordinateSequence {
 
 	protected abstract int computeSize();
 
-	public static class Asc extends CoordinateSequenceWindow {
+	public static class ForwardWindow extends CoordinateSequenceWindow {
 
-		public Asc(CoordinateSequence underlying, int start, int stop, int limit) {
+		public ForwardWindow(CoordinateSequence underlying, int start, int stop, int limit) {
 			super(underlying, start, stop, limit);
 
 		}
@@ -41,9 +41,9 @@ public abstract class CoordinateSequenceWindow implements CoordinateSequence {
 
 	}
 
-	public static class Desc extends CoordinateSequenceWindow {
+	public static class BackwardWindow extends CoordinateSequenceWindow {
 
-		public Desc(CoordinateSequence underlying, int start, int stop, int limit) {
+		public BackwardWindow(CoordinateSequence underlying, int start, int stop, int limit) {
 			super(underlying, start, stop, limit);
 		}
 

@@ -1,22 +1,18 @@
 package com.github.rthoth.xysplit;
 
+import org.locationtech.jts.geom.*;
+
 import java.util.LinkedList;
 import java.util.List;
 import java.util.function.Function;
 
-import org.locationtech.jts.geom.Geometry;
-import org.locationtech.jts.geom.GeometryFactory;
-import org.locationtech.jts.geom.MultiPolygon;
-import org.locationtech.jts.geom.Polygon;
-import org.locationtech.jts.geom.TopologyException;
-
 
 class MultiPolygonSplitter implements Function<MultiPolygon, SplitResult> {
 
-	private final PolygonSplitter polygonSplitter;
+	private final PolygonSplitter underlying;
 
-	public MultiPolygonSplitter(Reference reference) {
-		polygonSplitter = new PolygonSplitter(reference);
+	public MultiPolygonSplitter(Reference reference, double offset) {
+		underlying = new PolygonSplitter(reference, offset);
 	}
 
 	private void add(Geometry geometry, List<Polygon> polygons) {
@@ -39,7 +35,7 @@ class MultiPolygonSplitter implements Function<MultiPolygon, SplitResult> {
 		LinkedList<Polygon> lt = new LinkedList<>(), gt = new LinkedList<>();
 
 		for (int index = 0; index < multiPolygon.getNumGeometries(); index++) {
-			SplitResult splitResult = polygonSplitter.apply((Polygon) multiPolygon.getGeometryN(index));
+			SplitResult splitResult = underlying.apply((Polygon) multiPolygon.getGeometryN(index));
 			add(splitResult.lt, lt);
 			add(splitResult.gt, gt);
 		}
@@ -49,6 +45,10 @@ class MultiPolygonSplitter implements Function<MultiPolygon, SplitResult> {
 		MultiPolygon ltResponse = factory.createMultiPolygon(lt.toArray(new Polygon[0]));
 		MultiPolygon gtResponse = factory.createMultiPolygon(gt.toArray(new Polygon[0]));
 
-		return new SplitResult(ltResponse, gtResponse, polygonSplitter.reference);
+		return new SplitResult(ltResponse, gtResponse);
+	}
+
+	public SplitResult applyPadding(MultiPolygon multiPolygon, int padding) {
+		throw new UnsupportedOperationException();
 	}
 }

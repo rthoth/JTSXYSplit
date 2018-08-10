@@ -3,87 +3,100 @@ package com.github.rthoth.xysplit;
 import org.locationtech.jts.geom.Coordinate;
 import org.locationtech.jts.geom.CoordinateSequence;
 
-import java.util.Collection;
 import java.util.Comparator;
 
-public class MergeEvent implements Comparable<MergeEvent> {
+import static com.github.rthoth.xysplit.Location.ON;
 
-	public final double position;
+public class MergeEvent<T> {
 
-	public final Node lt;
+	protected final double position;
+	protected final Node lt;
+	protected final Node gt;
 
-	public final Node gt;
+	protected final T touched;
 
-	public MergeEvent(double position, Node lt, Node gt) {
+	public MergeEvent(double position, Node lt, Node gt, T touched) {
 		this.position = position;
 		this.lt = lt;
 		this.gt = gt;
+		this.touched = touched;
 	}
 
-	public Side nextSide(Side side) {
-		if (lt.location != gt.location) {
-			return lt.location == Location.IN ? Side.LT : Side.GT;
-		} else {
-			return side;
+	public MergeEvent(double position, Node lt, Node gt) {
+		this(position, lt, gt, null);
+	}
+
+	public Node get(Side side) {
+		switch (side) {
+			case LT:
+				return lt;
+
+			case GT:
+				return gt;
+
+			default:
+				throw new IllegalArgumentException(side.toString());
 		}
 	}
 
-	@Override
-	public int compareTo(MergeEvent other) {
-		return Double.compare(position, other.position);
+	public boolean canBeOrigin() {
+		if (lt != null && gt != null) {
+			return lt.location != ON && gt.location != ON && lt.location != gt.location;
+		} else if (lt != null && lt.location != ON) {
+			return true;
+		} else {
+			return gt != null && gt.location != ON;
+		}
 	}
 
-	public Node getNode(Side side) {
-		return side == Side.LT ? lt : gt;
-	}
+	public static class Node {
 
-	@Override
-	public String toString() {
-		return lt + " <<>> " + gt;
-	}
+		public static final Comparator<Node> INDEX_COMPARATOR = (a, b) -> a.index - b.index;
+		public static final Comparator<Node> POSITION_COMPARATOR = (a, b) -> Double.compare(a.position, b.position);
 
-	public static class Node implements Comparable<Node> {
-
-		@SuppressWarnings("ComparatorCombinators")
-		public final CoordinateSequence sequence;
 		public final int index;
-		public final Location location;
 		public final double position;
+		public final CoordinateSequence sequence;
+		public final Location location;
 
-		public Node(int index, Location location, double position, CoordinateSequence sequence) {
+		public Node(int index, double position, CoordinateSequence sequence, Location location) {
+			this.index = index;
 			this.position = position;
 			this.sequence = sequence;
-			this.index = index;
 			this.location = location;
 		}
 
-		@Override
-		public boolean equals(Object obj) {
-			if (obj instanceof Node) {
-				Node other = (Node) obj;
-				return index == other.index && position == other.position && location == other.location && sequence == other.sequence;
-			} else {
-				return false;
-			}
-		}
-
-		@Override
-		public int hashCode() {
-			return index + ((int) position);
-		}
-
-		@Override
-		public int compareTo(Node other) {
-			return Double.compare(position, other.position);
+		public Node copy(int index, CoordinateSequence sequence) {
+			return new Node(index, position, sequence, location);
 		}
 
 		@Override
 		public String toString() {
-			return String.format("(%d, %s, %s, %s)", index, location, position, getCoordinate());
+			return String.format("(i=%d, p=%f, l=%s)", index, position, location);
+		}
+
+		public double getX() {
+			return sequence.getX(index);
+		}
+
+		public double getY() {
+			return sequence.getY(index);
 		}
 
 		public Coordinate getCoordinate() {
 			return sequence.getCoordinate(index);
+		}
+
+		public Node withIndex(int newIndex) {
+			return new Node(newIndex, position, sequence, location);
+		}
+
+		public Node withSequence(CoordinateSequence sequence) {
+			return new Node(index, position, sequence, location);
+		}
+
+		public Node withIndex(int newIndex, Location newLocation) {
+			return new Node(newIndex, position, sequence, newLocation);
 		}
 	}
 }

@@ -1,23 +1,28 @@
 package com.github.rthoth.xysplit;
 
-import org.locationtech.jts.geom.Geometry;
-import org.locationtech.jts.geom.MultiPolygon;
-import org.locationtech.jts.geom.Polygon;
+import org.locationtech.jts.geom.*;
 
+import java.sql.Ref;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.function.BiFunction;
 
 public class XYMerger implements BiFunction<Geometry, Geometry, Geometry> {
-
-	private final Reference reference;
 	
-	public static boolean isPolygon(Geometry geometry) {
+	static boolean isPolygon(Geometry geometry) {
 		return geometry instanceof MultiPolygon || geometry instanceof Polygon;
 	}
+
+	static boolean isLineString(Geometry geometry) {
+		return geometry instanceof MultiLineString || geometry instanceof LineString;
+	}
+
+	static boolean isPoint(Geometry geometry) {
+		return geometry instanceof Point || geometry instanceof MultiPoint;
+	}
 	
-	public static List<Polygon> extractPolygons(Geometry geometry) {
+	static List<Polygon> extractPolygons(Geometry geometry) {
 		if (geometry instanceof Polygon)
 			return Collections.singletonList((Polygon) geometry);
 		else {
@@ -27,20 +32,41 @@ public class XYMerger implements BiFunction<Geometry, Geometry, Geometry> {
 			return polygons;
 		}
 	}
-	
+
+	private final double offset;
+	private final Reference reference;
+
 	public XYMerger(Reference reference) {
+		this(reference, XYSplitter.DEFAULT_OFFSET);
+	}
+	
+	public XYMerger(Reference reference, double offset) {
 		this.reference = reference;
+		this.offset = offset;
 	}
 
 	public Geometry apply(Geometry lt, Geometry gt) {
-		return apply(lt, gt, MergeSequence.DEFAULT_OFFSET);
-	}
-	
-	public Geometry apply(Geometry lt, Geometry gt, double offset) {
+
+		GeometryFactory factory = lt.getFactory() != null ? lt.getFactory() : gt.getFactory();
+
 		if (isPolygon(lt) && isPolygon(gt)) {
 			List<Polygon> lts = extractPolygons(lt), gts = extractPolygons(gt);
-			return new PolygonMerger(reference, offset).apply(lts, gts);
+			return new PolygonMerger(reference, offset).apply(factory, lts, gts);
 		}
-		return null;		
+
+		if (isLineString(lt) && isLineString(gt)) {
+			throw new UnsupportedOperationException();
+		}
+
+		if (isPoint(lt) && isPoint(gt)) {
+			throw new UnsupportedOperationException();
+		}
+
+		return new GeometryCollectionMerger(reference, offset).apply(factory, lt, gt);
+	}
+
+	@SuppressWarnings("unused")
+	public XYSplitter splitter() {
+		return new XYSplitter(reference, offset);
 	}
 }

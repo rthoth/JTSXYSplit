@@ -4,6 +4,7 @@ import org.locationtech.jts.geom.Coordinate;
 import org.locationtech.jts.geom.CoordinateSequence;
 import org.locationtech.jts.geom.CoordinateSequences;
 import org.locationtech.jts.geom.Envelope;
+import org.locationtech.jts.geom.impl.PackedCoordinateSequenceFactory;
 
 import java.util.List;
 import java.util.TreeMap;
@@ -100,7 +101,14 @@ public class SegmentedCoordinateSequence implements CoordinateSequence {
 
 	@Override
 	public CoordinateSequence copy() {
-		throw new UnsupportedOperationException();
+		double[] coords = new double[size() * 2];
+
+		for (int i = 0, l = size(), p = 0; i < l; i++) {
+			coords[p++] = getX(i);
+			coords[p++] = getY(i);
+		}
+
+		return PackedCoordinateSequenceFactory.DOUBLE_FACTORY.create(coords, 2);
 	}
 
 	@Override
