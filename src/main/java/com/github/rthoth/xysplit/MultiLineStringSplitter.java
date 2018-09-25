@@ -6,7 +6,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.function.Function;
 
-public class MultiLineStringSplitter implements Function<MultiLineString, SplitResult> {
+class MultiLineStringSplitter implements Function<MultiLineString, SplitResult> {
 
 	private final LineStringSplitter underlying;
 

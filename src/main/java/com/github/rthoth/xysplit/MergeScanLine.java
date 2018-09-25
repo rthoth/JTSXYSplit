@@ -3,7 +3,7 @@ package com.github.rthoth.xysplit;
 import java.util.Iterator;
 import java.util.NavigableMap;
 
-public class MergeScanLine implements Iterable<T2<MergeEvent.Node, MergeEvent.Node>> {
+class MergeScanLine implements Iterable<T2<MergeEvent.Node, MergeEvent.Node>> {
 
 	private final Iterator<T2<MergeEvent.Node, MergeEvent.Node>> EMPTY_ITERATOR = new Iterator<T2<MergeEvent.Node, MergeEvent.Node>>() {
 		@Override

@@ -149,7 +149,7 @@ public class Parallel {
 		}
 	}
 
-	interface Strategy {
+	public interface Strategy {
 
 		boolean shouldCompute(Geometry g1, Geometry g2);
 

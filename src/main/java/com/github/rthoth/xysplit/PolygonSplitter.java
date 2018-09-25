@@ -19,7 +19,7 @@ import static org.locationtech.jts.geom.Location.BOUNDARY;
 import static org.locationtech.jts.geom.Location.INTERIOR;
 
 
-public class PolygonSplitter extends AbstractSplitter<Polygon> {
+class PolygonSplitter extends AbstractSplitter<Polygon> {
 
 	public PolygonSplitter(Reference reference, double offset) {
 		super(new SplitSequencer.Poly(reference, offset));

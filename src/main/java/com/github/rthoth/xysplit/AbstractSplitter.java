@@ -6,7 +6,7 @@ import org.locationtech.jts.geom.Polygon;
 
 import java.util.function.Function;
 
-public abstract class AbstractSplitter<G extends Geometry> implements Function<G, SplitResult> {
+abstract class AbstractSplitter<G extends Geometry> implements Function<G, SplitResult> {
 
 	static double crossProduct(SplitEvent event) {
 		int limit = event.sequence.size() - 1;

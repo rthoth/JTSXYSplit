@@ -1,7 +1,7 @@
 package com.github.rthoth.xysplit;
 
 
-public enum Side {
+enum Side {
 
 	LT, GT, EQ;
 

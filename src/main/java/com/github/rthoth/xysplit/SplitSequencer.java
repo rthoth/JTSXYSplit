@@ -14,7 +14,7 @@ import static com.github.rthoth.xysplit.Side.GT;
 import static com.github.rthoth.xysplit.Side.LT;
 import static com.github.rthoth.xysplit.XY.X;
 
-public abstract class SplitSequencer implements Function<CoordinateSequence, SplitSequencer.Result> {
+abstract class SplitSequencer implements Function<CoordinateSequence, SplitSequencer.Result> {
 
 	public static final Result EMPTY = new Result(Collections.emptyList(), Collections.emptyList());
 

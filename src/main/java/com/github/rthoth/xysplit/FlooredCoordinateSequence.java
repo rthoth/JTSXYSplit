@@ -4,7 +4,7 @@ import org.locationtech.jts.geom.Coordinate;
 import org.locationtech.jts.geom.CoordinateSequence;
 import org.locationtech.jts.geom.Envelope;
 
-public class FlooredCoordinateSequence implements CoordinateSequence {
+class FlooredCoordinateSequence implements CoordinateSequence {
 
 	private final CoordinateSequence underlying;
 	private final int floor;

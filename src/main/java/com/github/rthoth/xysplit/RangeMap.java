@@ -4,7 +4,7 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.NavigableMap;
 
-public abstract class RangeMap<T> implements Iterable<T> {
+abstract class RangeMap<T> implements Iterable<T> {
 
 	protected final NavigableMap<Double, Range<T>> underlying;
 

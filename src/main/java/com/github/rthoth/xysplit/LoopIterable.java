@@ -3,7 +3,7 @@ package com.github.rthoth.xysplit;
 import java.util.Iterator;
 import java.util.NavigableSet;
 
-public abstract class LoopIterable<T> implements Iterable<T> {
+abstract class LoopIterable<T> implements Iterable<T> {
 
 	protected Iterator<T> first;
 	protected Iterator<T> last;

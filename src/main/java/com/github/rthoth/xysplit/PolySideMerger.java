@@ -12,7 +12,7 @@ import java.util.stream.Collectors;
 
 import static com.github.rthoth.xysplit.Location.IN;
 
-public class PolySideMerger implements BiFunction<Side, Iterable<Polygon>, List<Unity>> {
+class PolySideMerger implements BiFunction<Side, Iterable<Polygon>, List<Unity>> {
 
 	private static int computeNewIndex(int reference, int index, boolean forward, int size) {
 		if (forward)

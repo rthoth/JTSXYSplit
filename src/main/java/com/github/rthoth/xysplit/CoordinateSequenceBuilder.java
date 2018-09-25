@@ -7,7 +7,7 @@ import org.locationtech.jts.geom.impl.CoordinateArraySequence;
 import java.util.LinkedList;
 import java.util.stream.Collectors;
 
-public class CoordinateSequenceBuilder {
+class CoordinateSequenceBuilder {
 
 	public CoordinateSequence closeAndBuild() {
 		Builder first = builders.peekFirst();

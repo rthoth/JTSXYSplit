@@ -9,7 +9,7 @@ import org.locationtech.jts.geom.impl.PackedCoordinateSequenceFactory;
 import java.util.List;
 import java.util.TreeMap;
 
-public class SegmentedCoordinateSequence implements CoordinateSequence {
+class SegmentedCoordinateSequence implements CoordinateSequence {
 
 	private final TreeMap<Integer, CoordinateSequence> sequences = new TreeMap<>();
 	private final int size;

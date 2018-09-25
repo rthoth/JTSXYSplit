@@ -6,7 +6,7 @@ import org.locationtech.jts.geom.TopologyException;
 
 import java.util.function.ToDoubleFunction;
 
-public class XYDefinitions {
+class XYDefinitions {
 
 	public interface Decider {
 		Side apply(CoordinateSequence sequence, int index, double position, double offset);

@@ -1,6 +1,6 @@
 package com.github.rthoth.xysplit;
 
-public enum Location {
+enum Location {
 	IN, OUT, ON;
 
 	public Location invert() {

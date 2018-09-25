@@ -6,10 +6,13 @@
  * user guide available at https://docs.gradle.org/4.6/userguide/java_library_plugin.html
  */
 
+
 plugins {
     // Apply the java-library plugin to add support for Java Library
     id 'java-library'
 }
+
+version = '1.0.0-SNAPSHOT'
 
 dependencies {
     // This dependency is exported to consumers, that is to say found on their compile classpath.
@@ -25,6 +28,7 @@ dependencies {
 
 	 api 'org.locationtech.jts:jts-core:1.15.0'
 }
+
 
 // In this section you declare where to find the dependencies of your project
 repositories {

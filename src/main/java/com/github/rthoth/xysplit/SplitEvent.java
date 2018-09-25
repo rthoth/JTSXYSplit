@@ -5,7 +5,7 @@ import org.locationtech.jts.geom.CoordinateSequence;
 
 import java.util.Comparator;
 
-public class SplitEvent implements Comparable<SplitEvent> {
+class SplitEvent implements Comparable<SplitEvent> {
 
 	public static final Comparator<SplitEvent> POSITION_COMPARATOR = (a, b) -> Double.compare(a.position, b.position);
 

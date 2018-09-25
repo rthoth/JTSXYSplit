@@ -5,7 +5,7 @@ import org.locationtech.jts.geom.GeometryFactory;
 
 import java.util.function.BiFunction;
 
-public abstract class AbstractMerger<G extends Geometry> {
+abstract class AbstractMerger<G extends Geometry> {
 
 	protected final double offset;
 	protected final Reference reference;

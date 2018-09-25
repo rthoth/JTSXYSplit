@@ -7,7 +7,7 @@ import java.util.Comparator;
 
 import static com.github.rthoth.xysplit.Location.ON;
 
-public class MergeEvent<T> {
+class MergeEvent<T> {
 
 	protected final double position;
 	protected final Node lt;

@@ -12,7 +12,7 @@ import static com.github.rthoth.xysplit.Location.IN;
 import static com.github.rthoth.xysplit.Location.ON;
 import static com.github.rthoth.xysplit.Location.OUT;
 
-public abstract class MergeNodeSequencer implements BiFunction<Side, CoordinateSequence, MergeNodeSequencer.Result> {
+abstract class MergeNodeSequencer implements BiFunction<Side, CoordinateSequence, MergeNodeSequencer.Result> {
 
 	public final double offset;
 	public final Reference reference;

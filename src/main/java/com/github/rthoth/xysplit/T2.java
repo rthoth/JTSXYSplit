@@ -1,6 +1,6 @@
 package com.github.rthoth.xysplit;
 
-public class T2<_1, _2> {
+class T2<_1, _2> {
 
 	public static <_1, _2> T2<_1, _2> of(_1 a, _2 b) {
 		return new T2<>(a, b);

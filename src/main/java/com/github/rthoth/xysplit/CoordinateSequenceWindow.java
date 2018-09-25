@@ -4,7 +4,7 @@ import org.locationtech.jts.geom.Coordinate;
 import org.locationtech.jts.geom.CoordinateSequence;
 import org.locationtech.jts.geom.Envelope;
 
-public abstract class CoordinateSequenceWindow implements CoordinateSequence {
+abstract class CoordinateSequenceWindow implements CoordinateSequence {
 
 	protected final CoordinateSequence underlying;
 	protected final int start;

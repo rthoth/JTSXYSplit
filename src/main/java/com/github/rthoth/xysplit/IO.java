@@ -1,6 +1,6 @@
 package com.github.rthoth.xysplit;
 
-public enum IO {
+enum IO {
 	I_O, O_I;
 
 	public IO invert() {

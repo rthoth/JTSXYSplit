@@ -16,7 +16,7 @@ import static com.github.rthoth.xysplit.Location.*;
 import static com.github.rthoth.xysplit.Side.GT;
 import static com.github.rthoth.xysplit.Side.LT;
 
-public class PolygonMerger extends AbstractMerger<Polygon> {
+class PolygonMerger extends AbstractMerger<Polygon> {
 
 	private final MergeNodeSequencer.Poly sequencer;
 	private final PolySideMerger sideMerger;
