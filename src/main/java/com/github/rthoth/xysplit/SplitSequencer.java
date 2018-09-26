@@ -16,13 +16,14 @@ import static com.github.rthoth.xysplit.XY.X;
 
 abstract class SplitSequencer implements Function<CoordinateSequence, SplitSequencer.Result> {
 
-	public static final Result EMPTY = new Result(Collections.emptyList(), Collections.emptyList());
+	private static final Result EMPTY = new Result(Collections.emptyList(), Collections.emptyList());
 
 	public static class Result {
 
 		public final List<SplitEvent> lt;
 		public final List<SplitEvent> gt;
-		public Result(List<SplitEvent> lt, List<SplitEvent> gt) {
+
+		Result(List<SplitEvent> lt, List<SplitEvent> gt) {
 			this.lt = lt;
 			this.gt = gt;
 		}
@@ -31,12 +32,12 @@ abstract class SplitSequencer implements Function<CoordinateSequence, SplitSeque
 	}
 
 	private final XYDefinitions.OrdinateExtractor ordinatePosition;
-	protected final ToDoubleFunction<Coordinate> coordinatePosition;
+	private final ToDoubleFunction<Coordinate> coordinatePosition;
 	protected final double offset;
 	protected final Reference reference;
 
 
-	public SplitSequencer(Reference reference, double offset) {
+	SplitSequencer(Reference reference, double offset) {
 		this.reference = reference;
 		this.offset = Math.abs(offset);
 		coordinatePosition = reference.xy == X ? XYDefinitions.Y_ORDINATE_COORDINATE_EXTRACTOR : XYDefinitions.X_ORDINATE_COORDINATE_EXTRACTOR;
@@ -47,7 +48,7 @@ abstract class SplitSequencer implements Function<CoordinateSequence, SplitSeque
 
 	public static class Line extends SplitSequencer {
 
-		public Line(Reference reference, double offset) {
+		Line(Reference reference, double offset) {
 			super(reference, offset);
 		}
 
@@ -64,7 +65,7 @@ abstract class SplitSequencer implements Function<CoordinateSequence, SplitSeque
 
 	public static class Poly extends SplitSequencer {
 
-		public Poly(Reference reference, double offset) {
+		Poly(Reference reference, double offset) {
 			super(reference, offset);
 		}
 

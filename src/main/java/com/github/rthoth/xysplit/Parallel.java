@@ -3,6 +3,7 @@ package com.github.rthoth.xysplit;
 import org.locationtech.jts.geom.Envelope;
 import org.locationtech.jts.geom.Geometry;
 import org.locationtech.jts.geom.Polygon;
+import org.locationtech.jts.geom.TopologyException;
 import org.locationtech.jts.operation.overlay.OverlayOp;
 import org.locationtech.jts.operation.union.CascadedPolygonUnion;
 
@@ -17,7 +18,7 @@ import java.util.stream.Collectors;
 
 public class Parallel {
 
-//	public static final ExecutorService EXECUTOR = Executors.newSingleThreadExecutor();
+	//	public static final ExecutorService EXECUTOR = Executors.newSingleThreadExecutor();
 	public static final ExecutorService EXECUTOR = ForkJoinPool.commonPool();
 
 	public static final XY DEFAULT_START = XY.X;
@@ -33,11 +34,7 @@ public class Parallel {
 	private static final BiFunction<Geometry, Geometry, Geometry> INTERSECTION = (a, b) -> OverlayOp.overlayOp(a, b, OverlayOp.INTERSECTION);
 	private static final BiFunction<Geometry, Geometry, Geometry> UNION = (a, b) -> OverlayOp.overlayOp(a, b, OverlayOp.UNION);
 	private static final BiFunction<Geometry, Geometry, Geometry> DIFFERENCE = (a, b) -> OverlayOp.overlayOp(a, b, OverlayOp.DIFFERENCE);
-	private static final Function<Collection<? extends Geometry>, Geometry> COLLECTION_UNION = geometries -> {
-		Geometry ret = new CascadedPolygonUnion(geometries).union();
-//		System.out.println(ret);
-		return ret;
-	};
+	private static final Function<Collection<? extends Geometry>, Geometry> COLLECTION_UNION = geometries -> new CascadedPolygonUnion(geometries).union();
 
 	public static Future<Geometry> difference(Geometry g1, Geometry g2, Strategy strategy) {
 		return parallel(DIFFERENCE, g1, g2, DEFAULT_START, strategy);
@@ -92,13 +89,6 @@ public class Parallel {
 							.thenCombineAsync(fSplit2, (s1, s2) -> T2.of(s1.gt, s2.gt), EXECUTOR)
 							.thenComposeAsync(t2 -> parallel(function, t2._1, t2._2, inverted, nextStrategy));
 
-//			lt.thenCombineAsync(gt, (ltG, gtG) -> {
-//				System.out.println(ltG);
-//				System.out.println(gtG);
-//
-//				return null;
-//			}, EXECUTOR);
-
 			return lt.thenCombineAsync(gt, (gLT, gGT) -> splitter.merger().apply(gLT, gGT), EXECUTOR);
 		}
 	}
@@ -106,6 +96,7 @@ public class Parallel {
 	private static <G extends Geometry> CompletableFuture<Geometry> parallel(final Function<Collection<? extends Geometry>, Geometry> function, Collection<G> geometries, XY xy, Strategy strategy) {
 		if (strategy.apply(geometries)) {
 			return CompletableFuture.supplyAsync(() -> {
+				//noinspection CodeBlock2Expr
 				return function.apply(geometries.stream().filter(g -> !g.isEmpty()).collect(Collectors.toList()));
 			});
 		} else {
@@ -129,6 +120,7 @@ public class Parallel {
 
 					for (G geometry : geometries) {
 						SplitResult result = splitter.apply(geometry);
+
 						lt.add(result.lt);
 						gt.add(result.gt);
 					}

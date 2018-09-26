@@ -57,4 +57,11 @@ public class BigTest extends GeometryTest implements Download {
 		Geometry result = new CascadedPolygonUnion(unique(geometries)).union();
 		assertThat(result.getArea()).isCloseTo(5.056440000782123E-5, offset(1e-8));
 	}
+
+	@Test
+	public void union_04() throws ExecutionException, InterruptedException {
+		List<Geometry> geometries = wktz(download("https://dl.bintray.com/rthoth/generic/jtsxyplit_tests/many_polygons.gz", "many_polygons.gz"));
+		Geometry result = Parallel.union(geometries, Parallel.level(8)).get();
+		assertThat(result.getArea()).isCloseTo(0, offset(1e-8));
+	}
 }

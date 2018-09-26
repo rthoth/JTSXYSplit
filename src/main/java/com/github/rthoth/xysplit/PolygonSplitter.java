@@ -21,11 +21,11 @@ import static org.locationtech.jts.geom.Location.INTERIOR;
 
 class PolygonSplitter extends AbstractSplitter<Polygon> {
 
-	public PolygonSplitter(Reference reference, double offset) {
+	PolygonSplitter(Reference reference, double offset) {
 		super(new SplitSequencer.Poly(reference, offset));
 	}
 
-	public SplitResult split(Polygon polygon, Function<CoordinateSequence, SplitSequencer.Result> sequencer) {
+	private SplitResult split(Polygon polygon, Function<CoordinateSequence, SplitSequencer.Result> sequencer) {
 		CoordinateSequence shell = polygon.getExteriorRing().getCoordinateSequence();
 		SplitSequencer.Result shellSplitResult = sequencer.apply(shell);
 
@@ -136,7 +136,7 @@ class PolygonSplitter extends AbstractSplitter<Polygon> {
 					LinearRing[] _holes = holes
 									.stream()
 									.map(x -> factory.createLinearRing(x.sequence))
-									.toArray(i -> new LinearRing[i]);
+									.toArray(LinearRing[]::new);
 
 					result = factory.createPolygon(factory.createLinearRing(shell.sequence), _holes);
 				} else {
@@ -145,6 +145,7 @@ class PolygonSplitter extends AbstractSplitter<Polygon> {
 			}
 		}
 
+		@SuppressWarnings("ConstantConditions")
 		private void removeColision(SplitEvent event, TreeSet<SplitEvent> events) {
 			SplitEvent other = boundary.ceiling(event);
 			if (other.position == event.position) {
@@ -220,9 +221,7 @@ class PolygonSplitter extends AbstractSplitter<Polygon> {
 
 			} while (start != origin);
 
-			Poly poly = new Poly(builder.closeAndBuild());
-
-			return poly;
+			return new Poly(builder.closeAndBuild());
 		}
 
 		private List<Polygon> createPolygons(Deque<Unity> untouched) {
@@ -463,12 +462,6 @@ class PolygonSplitter extends AbstractSplitter<Polygon> {
 				LinearRing shell = factory.createLinearRing(this.shell);
 				LinearRing[] holes = this.holes.stream().map(factory::createLinearRing).toArray(LinearRing[]::new);
 				return factory.createPolygon(shell, holes);
-//				TopologyValidationError error = new IsValidOp(ret).getValidationError();
-//
-//				if (error != null)
-//					throw new TopologyException(error.getMessage(), error.getCoordinate());
-//
-//				return ret;
 			}
 		}
 

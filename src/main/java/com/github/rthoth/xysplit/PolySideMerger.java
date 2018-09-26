@@ -36,9 +36,9 @@ class PolySideMerger implements BiFunction<Side, Iterable<Polygon>, List<Unity>>
 
 		public final List<Unity> result;
 
-		private Set<Unity> readyPolies = new HashSet<>();
+		private Set<Unity> readyUnities = new HashSet<>();
 		private final NavigableMap<Double, Join> joins = new TreeMap<>();
-		private final Map<Node, Unity> nodeToPoly = new HashMap<>();
+		private final Map<Node, Unity> nodeToUnity = new HashMap<>();
 		private final Map<Node, Join> nodeToJoin = new HashMap<>();
 
 		private boolean forward;
@@ -68,10 +68,10 @@ class PolySideMerger implements BiFunction<Side, Iterable<Polygon>, List<Unity>>
 
 					for (Node node : nodes) {
 						Node other = boundary.put(node.position, node);
-						nodeToPoly.put(node, unity);
+						nodeToUnity.put(node, unity);
 
 						if (other == null) {
-							nodeToPoly.put(node, unity);
+							nodeToUnity.put(node, unity);
 							boundary.put(node.position, node);
 						} else {
 							Join join = new Join(node.position, node, other);
@@ -83,12 +83,12 @@ class PolySideMerger implements BiFunction<Side, Iterable<Polygon>, List<Unity>>
 							nodeToJoin.put(node, join);
 							nodeToJoin.put(other, join);
 							boundary.remove(other.position);
-							readyPolies.remove(nodeToPoly.get(other));
+							readyUnities.remove(nodeToUnity.get(other));
 						}
 					}
 
 					if (joinSize == joins.size())
-						readyPolies.add(unity);
+						readyUnities.add(unity);
 
 				} else if (!unity.isEmpty()) {
 					ret.addLast(unity);
@@ -112,7 +112,7 @@ class PolySideMerger implements BiFunction<Side, Iterable<Polygon>, List<Unity>>
 				}
 			}
 
-			ret.addAll(readyPolies);
+			ret.addAll(readyUnities);
 
 			if (!joins.isEmpty())
 				mergeJoins(ret);
@@ -139,7 +139,7 @@ class PolySideMerger implements BiFunction<Side, Iterable<Polygon>, List<Unity>>
 			Set<Unity> usedPolies = new HashSet<>();
 
 			do {
-				usedPolies.add(nodeToPoly.get(startNode));
+				usedPolies.add(nodeToUnity.get(startNode));
 				searchStop(newNodes, builder.size());
 
 				int stopIndex;
@@ -181,7 +181,7 @@ class PolySideMerger implements BiFunction<Side, Iterable<Polygon>, List<Unity>>
 		private void searchStop(Deque<Node> newNodes, int size) {
 			forward = startNode.location == IN;
 			toward = forward == inside;
-			Unity unity = nodeToPoly.get(startNode);
+			Unity unity = nodeToUnity.get(startNode);
 			Iterable<Node> iterable = new LoopIterable.NaviableSet<>(unity.nodes, startNode, false, toward);
 			int sequenceSize = startNode.sequence.size();
 

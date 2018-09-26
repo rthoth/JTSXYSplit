@@ -6,11 +6,11 @@ import java.util.function.Function;
 
 
 /**
- * This is a main class. You can use this to split yours geometries.
+ * This is a main class. You can use this to split your geometries.
  */
 public class XYSplitter implements Function<Geometry, SplitResult> {
 
-	public static final double DEFAULT_OFFSET = 1e-8;
+	static final double DEFAULT_OFFSET = 1e-8;
 
 	public final Reference reference;
 	public final double offset;
