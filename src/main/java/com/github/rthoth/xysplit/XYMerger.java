@@ -2,7 +2,6 @@ package com.github.rthoth.xysplit;
 
 import org.locationtech.jts.geom.*;
 
-import java.sql.Ref;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;

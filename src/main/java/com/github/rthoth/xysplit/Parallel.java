@@ -2,15 +2,12 @@ package com.github.rthoth.xysplit;
 
 import org.locationtech.jts.geom.Envelope;
 import org.locationtech.jts.geom.Geometry;
-import org.locationtech.jts.geom.Polygon;
-import org.locationtech.jts.geom.TopologyException;
 import org.locationtech.jts.operation.overlay.OverlayOp;
 import org.locationtech.jts.operation.union.CascadedPolygonUnion;
 
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Iterator;
-import java.util.List;
 import java.util.concurrent.*;
 import java.util.function.BiFunction;
 import java.util.function.Function;

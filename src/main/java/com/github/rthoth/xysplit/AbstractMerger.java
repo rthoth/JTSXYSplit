@@ -3,8 +3,6 @@ package com.github.rthoth.xysplit;
 import org.locationtech.jts.geom.Geometry;
 import org.locationtech.jts.geom.GeometryFactory;
 
-import java.util.function.BiFunction;
-
 abstract class AbstractMerger<G extends Geometry> {
 
 	protected final double offset;

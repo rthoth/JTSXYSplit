@@ -182,7 +182,7 @@ class PolySideMerger implements BiFunction<Side, Iterable<Polygon>, List<Unity>>
 			forward = startNode.location == IN;
 			toward = forward == inside;
 			Unity unity = nodeToUnity.get(startNode);
-			Iterable<Node> iterable = new LoopIterable.NaviableSet<>(unity.nodes, startNode, false, toward);
+			Iterable<Node> iterable = new IterableLoop.NaviableSet<>(unity.nodes, startNode, false, toward);
 			int sequenceSize = startNode.sequence.size();
 
 			stopNode = null;

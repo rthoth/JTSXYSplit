@@ -69,18 +69,8 @@ class PolygonMerger extends AbstractMerger<Polygon> {
 			this.holes.addAll(holes);
 		}
 
-		public Unity(CoordinateSequence shell, List<Node> nodes, Polygon polygon) {
-			this(shell, nodes, extractHoles(polygon));
-		}
-
 		public Unity(CoordinateSequence shell, MergeNodeSequencer.Result result, Polygon original) {
 			this(shell, result.nodes, extractHoles(result.circles, original));
-		}
-
-		private static List<CoordinateSequence> extractHoles(Polygon polygon) {
-			return IntStream.range(0, polygon.getNumInteriorRing())
-							.mapToObj(i -> polygon.getInteriorRingN(i).getCoordinateSequence())
-							.collect(Collectors.toList());
 		}
 
 		public static List<CoordinateSequence> extractHoles(List<CoordinateSequence> circles, Polygon polygon) {

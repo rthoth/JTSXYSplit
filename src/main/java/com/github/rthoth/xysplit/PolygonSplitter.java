@@ -2,8 +2,6 @@ package com.github.rthoth.xysplit;
 
 import org.locationtech.jts.algorithm.RayCrossingCounter;
 import org.locationtech.jts.geom.*;
-import org.locationtech.jts.operation.valid.IsValidOp;
-import org.locationtech.jts.operation.valid.TopologyValidationError;
 
 import java.util.*;
 import java.util.function.Function;

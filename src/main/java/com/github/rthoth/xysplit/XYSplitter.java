@@ -43,6 +43,7 @@ public class XYSplitter implements Function<Geometry, SplitResult> {
 		}
 	}
 
+	@SuppressWarnings("unused")
 	public SplitResult apply(Geometry geometry, int padding) {
 		if (padding > 2) {
 			if (geometry instanceof Polygon)

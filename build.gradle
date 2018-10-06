@@ -37,16 +37,6 @@ repositories {
     jcenter()
 }
 
-task sourcesJar(type: Jar) {
-    from sourceSets.main.java
-    classifier = 'sources'
-}
-
-task javadocJar(type: Jar) {
-    from javadoc
-    classifier = 'javadoc'
-}
-
 publishing {
 
     repositories {

@@ -2,7 +2,6 @@ package com.github.rthoth.xysplit;
 
 import org.locationtech.jts.geom.CoordinateSequence;
 import org.locationtech.jts.geom.Geometry;
-import org.locationtech.jts.geom.Polygon;
 
 import java.util.function.Function;
 

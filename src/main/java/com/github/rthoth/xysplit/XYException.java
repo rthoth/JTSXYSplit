@@ -1,5 +1,6 @@
 package com.github.rthoth.xysplit;
 
+@SuppressWarnings("ALL")
 public abstract class XYException extends RuntimeException {
 
 	public XYException(String message) {

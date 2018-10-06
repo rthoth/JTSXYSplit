@@ -3,7 +3,7 @@ package com.github.rthoth.xysplit;
 import java.util.Iterator;
 import java.util.NavigableSet;
 
-abstract class LoopIterable<T> implements Iterable<T> {
+abstract class IterableLoop<T> implements Iterable<T> {
 
 	protected Iterator<T> first;
 	protected Iterator<T> last;
@@ -62,7 +62,7 @@ abstract class LoopIterable<T> implements Iterable<T> {
 		}
 	}
 
-	public static class NaviableSet<T> extends LoopIterable<T> {
+	public static class NaviableSet<T> extends IterableLoop<T> {
 
 		public NaviableSet(final NavigableSet<T> set, final T root, final boolean inclusive, final boolean asceding) {
 			if (asceding) {
