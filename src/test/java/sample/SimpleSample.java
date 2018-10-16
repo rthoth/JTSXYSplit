@@ -23,7 +23,7 @@ public class SimpleSample {
 		envelope.expandToInclude(polygon2.getEnvelopeInternal());
 
 		// middle point.
-		Reference x = Reference.x((envelope.getMaxX() + envelope.getMinX()) / 2);	
+		Reference x = Reference.x((envelope.getMaxX() + envelope.getMinX()) / 2);
 
 		XYSplitter splitter = new XYSplitter(x);
 

@@ -25,21 +25,21 @@ class PolygonSplitter extends AbstractSplitter<Polygon> {
 
 	private SplitResult split(Polygon polygon, Function<CoordinateSequence, SplitSequencer.Result> sequencer) {
 		CoordinateSequence shell = polygon.getExteriorRing().getCoordinateSequence();
-		SplitSequencer.Result shellSplitResult = sequencer.apply(shell);
+		SplitSequencer.Result shellResult = sequencer.apply(shell);
 
 		ArrayList<Unity> ltHoles = new ArrayList<>(polygon.getNumInteriorRing());
 		ArrayList<Unity> gtHoles = new ArrayList<>(polygon.getNumInteriorRing());
 
 		for (int i = 0, l = polygon.getNumInteriorRing(); i < l; i++) {
 			CoordinateSequence sequence = polygon.getInteriorRingN(i).getCoordinateSequence();
-			SplitSequencer.Result holeSplitResult = sequencer.apply(sequence);
+			SplitSequencer.Result holeResult = sequencer.apply(sequence);
 
-			ltHoles.add(new Unity(holeSplitResult.lt, sequence));
-			gtHoles.add(new Unity(holeSplitResult.gt, sequence));
+			ltHoles.add(new Unity(holeResult.lt, sequence));
+			gtHoles.add(new Unity(holeResult.gt, sequence));
 		}
 
-		Geometry lt = new Splitter(LT, new Unity(shellSplitResult.lt, shell), ltHoles, polygon.getFactory()).result;
-		Geometry gt = new Splitter(GT, new Unity(shellSplitResult.gt, shell), gtHoles, polygon.getFactory()).result;
+		Geometry lt = new Splitter(LT, new Unity(shellResult.lt, shell), ltHoles, polygon.getFactory()).result;
+		Geometry gt = new Splitter(GT, new Unity(shellResult.gt, shell), gtHoles, polygon.getFactory()).result;
 
 		return new SplitResult(lt, gt);
 	}

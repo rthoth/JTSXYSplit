@@ -45,11 +45,6 @@ class LineStringSplitter extends AbstractSplitter<LineString> {
 		private final Geometry result;
 
 		public Splitter(Side side, LineString original, List<SplitEvent> events) {
-			this.original = original;
-			this.side = side;
-			this.events = new LinkedList<>(events);
-
-			result = null;
 			throw new UnsupportedOperationException();
 		}
 	}
