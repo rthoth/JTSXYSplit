@@ -12,7 +12,7 @@ import java.util.function.Function;
 /**
  * A Line splitter.
  */
-class LineStringSplitter extends AbstractSplitter<LineString> {
+public class LineStringSplitter extends AbstractSplitter<LineString> {
 
 	public LineStringSplitter(Reference reference, double offset) {
 		super(new SplitSequencer.Line(reference, offset));

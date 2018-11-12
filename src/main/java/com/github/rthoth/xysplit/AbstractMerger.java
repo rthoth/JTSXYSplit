@@ -3,7 +3,7 @@ package com.github.rthoth.xysplit;
 import org.locationtech.jts.geom.Geometry;
 import org.locationtech.jts.geom.GeometryFactory;
 
-abstract class AbstractMerger<G extends Geometry> {
+public abstract class AbstractMerger<G extends Geometry> {
 
 	protected final double offset;
 	protected final Reference reference;

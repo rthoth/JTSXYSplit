@@ -27,7 +27,7 @@ echo.
 echo ERROR: JAVA_HOME is not underlying and no 'java' command could be found in your PATH.
 echo.
 echo Please underlying the JAVA_HOME variable in your environment to match the
-echo location of your Java installation.
+echo inOnOut of your Java installation.
 
 goto fail
 
@@ -41,7 +41,7 @@ echo.
 echo ERROR: JAVA_HOME is underlying to an invalid directory: %JAVA_HOME%
 echo.
 echo Please underlying the JAVA_HOME variable in your environment to match the
-echo location of your Java installation.
+echo inOnOut of your Java installation.
 
 goto fail
 

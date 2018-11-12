@@ -10,7 +10,7 @@ import java.util.*;
 import java.util.function.BiFunction;
 import java.util.stream.Collectors;
 
-import static com.github.rthoth.xysplit.Location.IN;
+import static com.github.rthoth.xysplit.InOnOut.IN;
 
 class PolySideMerger implements BiFunction<Side, Iterable<Polygon>, List<Unity>> {
 
@@ -130,7 +130,7 @@ class PolySideMerger implements BiFunction<Side, Iterable<Polygon>, List<Unity>>
 			startJoin = root;
 			Node _1 = root._1, _2 = root._2;
 
-			originNode = startNode = _1.location == IN ? _1 : _2;
+			originNode = startNode = _1.inOnOut == IN ? _1 : _2;
 
 			LinkedList<Node> newNodes = new LinkedList<>();
 			CoordinateSequenceBuilder builder = new CoordinateSequenceBuilder();
@@ -179,7 +179,7 @@ class PolySideMerger implements BiFunction<Side, Iterable<Polygon>, List<Unity>>
 		}
 
 		private void searchStop(Deque<Node> newNodes, int size) {
-			forward = startNode.location == IN;
+			forward = startNode.inOnOut == IN;
 			toward = forward == inside;
 			Unity unity = nodeToUnity.get(startNode);
 			Iterable<Node> iterable = new IterableLoop.NaviableSet<>(unity.nodes, startNode, false, toward);
@@ -194,7 +194,7 @@ class PolySideMerger implements BiFunction<Side, Iterable<Polygon>, List<Unity>>
 
 					final Node newNode = toward ?
 									node.withIndex(size + computeNewIndex(startNode.index, node.index, toward, sequenceSize))
-									: node.withIndex(size + computeNewIndex(startNode.index, node.index, toward, sequenceSize), node.location.invert());
+									: node.withIndex(size + computeNewIndex(startNode.index, node.index, toward, sequenceSize), node.inOnOut.invert());
 
 					newNodes.addLast(newNode);
 

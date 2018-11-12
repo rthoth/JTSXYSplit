@@ -8,9 +8,9 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.function.BiFunction;
 
-import static com.github.rthoth.xysplit.Location.IN;
-import static com.github.rthoth.xysplit.Location.ON;
-import static com.github.rthoth.xysplit.Location.OUT;
+import static com.github.rthoth.xysplit.InOnOut.IN;
+import static com.github.rthoth.xysplit.InOnOut.ON;
+import static com.github.rthoth.xysplit.InOnOut.OUT;
 
 abstract class MergeNodeSequencer implements BiFunction<Side, CoordinateSequence, MergeNodeSequencer.Result> {
 
@@ -30,10 +30,10 @@ abstract class MergeNodeSequencer implements BiFunction<Side, CoordinateSequence
 		if (sequence.size() > 3) {
 			LinkedList<MergeEvent.Node> nodes = new LinkedList<>();
 			LinkedList<CoordinateSequence> circles = new LinkedList<>();
-			Location last = reference.classify(sequence, 0, offset).location(side), current;
+			InOnOut last = reference.classify(sequence, 0, offset).inOnOut(side), current;
 
 			for (int i = 1, l = sequence.size(); i < l; i++) {
-				current = reference.classify(sequence, i, offset).location(side);
+				current = reference.classify(sequence, i, offset).inOnOut(side);
 
 				if ((current == ON || last == ON) && !(current == ON && last == ON)) {
 					register(i, current, last, nodes, sequence, circles);
@@ -50,7 +50,7 @@ abstract class MergeNodeSequencer implements BiFunction<Side, CoordinateSequence
 
 	protected abstract void cleanUp(Deque<MergeEvent.Node> events);
 
-	protected abstract void register(int index, Location current, Location last, Deque<MergeEvent.Node> nodes, CoordinateSequence sequence, Deque<CoordinateSequence> circles);
+	protected abstract void register(int index, InOnOut current, InOnOut last, Deque<MergeEvent.Node> nodes, CoordinateSequence sequence, Deque<CoordinateSequence> circles);
 
 	public static class Poly extends MergeNodeSequencer {
 
@@ -65,8 +65,8 @@ abstract class MergeNodeSequencer implements BiFunction<Side, CoordinateSequence
 				MergeEvent.Node last = nodes.peekLast();
 
 				if (first.index == 0 && last.index == last.sequence.size() - 1) {
-					if (first.location == last.location) {
-						if (first.location == OUT) {
+					if (first.inOnOut == last.inOnOut) {
+						if (first.inOnOut == OUT) {
 							nodes.pollFirst();
 						} else {
 							nodes.pollLast();
@@ -75,8 +75,8 @@ abstract class MergeNodeSequencer implements BiFunction<Side, CoordinateSequence
 						nodes.pollLast();
 						nodes.pollFirst();
 					}
-				} else if (first.location == last.location) {
-					if (first.location == OUT) {
+				} else if (first.inOnOut == last.inOnOut) {
+					if (first.inOnOut == OUT) {
 						nodes.pollFirst();
 					} else {
 						nodes.pollLast();
@@ -86,7 +86,7 @@ abstract class MergeNodeSequencer implements BiFunction<Side, CoordinateSequence
 		}
 
 		@Override
-		protected void register(int index, Location current, Location last, Deque<MergeEvent.Node> nodes, CoordinateSequence sequence, Deque<CoordinateSequence> circles) {
+		protected void register(int index, InOnOut current, InOnOut last, Deque<MergeEvent.Node> nodes, CoordinateSequence sequence, Deque<CoordinateSequence> circles) {
 			MergeEvent.Node newNode = null;
 
 			if (current == ON) {
@@ -95,7 +95,7 @@ abstract class MergeNodeSequencer implements BiFunction<Side, CoordinateSequence
 				MergeEvent.Node lastNode = nodes.peekLast();
 
 				if (lastNode != null) {
-					if (lastNode.location != current) {
+					if (lastNode.inOnOut != current) {
 						if (lastNode.index != index - 1) {
 							newNode = new MergeEvent.Node(index - 1, extractor.apply(sequence, index - 1), sequence, current);
 						} else {
@@ -118,7 +118,7 @@ abstract class MergeNodeSequencer implements BiFunction<Side, CoordinateSequence
 					if (Math.abs(lastNode.position - newNode.position) > offset) {
 						nodes.addLast(newNode);
 					} else {
-						if (lastNode.location != newNode.location) {
+						if (lastNode.inOnOut != newNode.inOnOut) {
 							// TODO: Does it should to handle invalid geometries????
 							nodes.pollLast();
 
@@ -127,7 +127,7 @@ abstract class MergeNodeSequencer implements BiFunction<Side, CoordinateSequence
 								CoordinateSequenceBuilder builder = new CoordinateSequenceBuilder();
 								builder.addRing(sequence, lastNode.index, newNode.index, true);
 
-								if (newNode.position != lastNode.position) {
+								if (newNode.inOnOut != lastNode.inOnOut) {
 									circles.addLast(builder.closeAndBuild());
 								} else {
 									circles.addLast(builder.build());

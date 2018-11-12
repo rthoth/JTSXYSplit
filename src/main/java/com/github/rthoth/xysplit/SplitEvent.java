@@ -13,13 +13,13 @@ class SplitEvent implements Comparable<SplitEvent> {
 
 	public final Coordinate coordinate;
 	public final int index;
-	public final Location location;
+	public final InOnOut inOnOut;
 	public final double position;
 	public final CoordinateSequence sequence;
 
-	public SplitEvent(int index, double position, Location location, Coordinate coordinate, CoordinateSequence sequence) {
+	public SplitEvent(int index, double position, InOnOut inOnOut, Coordinate coordinate, CoordinateSequence sequence) {
 		this.index = index;
-		this.location = location;
+		this.inOnOut = inOnOut;
 		this.coordinate = coordinate;
 		this.sequence = sequence;
 		this.position = position;
@@ -35,7 +35,7 @@ class SplitEvent implements Comparable<SplitEvent> {
 			SplitEvent other = (SplitEvent) obj;
 
 			return index == other.index
-							&& location == other.location
+							&& inOnOut == other.inOnOut
 							&& (coordinate == other.coordinate || (coordinate != null && coordinate.equals(other.coordinate)));
 		} else {
 			return false;
@@ -51,10 +51,10 @@ class SplitEvent implements Comparable<SplitEvent> {
 	}
 
 	public String toString() {
-		return String.format("Event(i=%d, p=%f, l=%s, c=%s)", index, position, location, coordinate);
+		return String.format("Event(i=%d, p=%f, l=%s, c=%s)", index, inOnOut, inOnOut, coordinate);
 	}
 
-	public SplitEvent withLocation(Location location) {
-		return new SplitEvent(index, position, location, coordinate, sequence);
+	public SplitEvent withLocation(InOnOut inOnOut) {
+		return new SplitEvent(index, this.position, inOnOut, coordinate, sequence);
 	}
 }

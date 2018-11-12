@@ -7,7 +7,7 @@ import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-import static com.github.rthoth.xysplit.Location.*;
+import static com.github.rthoth.xysplit.InOnOut.*;
 import static com.github.rthoth.xysplit.IO.I_O;
 import static com.github.rthoth.xysplit.IO.O_I;
 import static com.github.rthoth.xysplit.Side.GT;
@@ -17,7 +17,7 @@ import static org.locationtech.jts.geom.Location.BOUNDARY;
 import static org.locationtech.jts.geom.Location.INTERIOR;
 
 
-class PolygonSplitter extends AbstractSplitter<Polygon> {
+public class PolygonSplitter extends AbstractSplitter<Polygon> {
 
 	PolygonSplitter(Reference reference, double offset) {
 		super(new SplitSequencer.Poly(reference, offset));
@@ -94,7 +94,7 @@ class PolygonSplitter extends AbstractSplitter<Polygon> {
 					if (boundary.add(event))
 						events.add(event);
 					else {
-						removeColision(event, events);
+						removeCollision(event, events);
 					}
 				}
 
@@ -108,7 +108,7 @@ class PolygonSplitter extends AbstractSplitter<Polygon> {
 							if (boundary.add(event))
 								events.add(event);
 							else {
-								removeColision(event, events);
+								removeCollision(event, events);
 							}
 						}
 
@@ -144,9 +144,9 @@ class PolygonSplitter extends AbstractSplitter<Polygon> {
 		}
 
 		@SuppressWarnings("ConstantConditions")
-		private void removeColision(SplitEvent event, TreeSet<SplitEvent> events) {
+		private void removeCollision(SplitEvent event, TreeSet<SplitEvent> events) {
 			SplitEvent other = boundary.ceiling(event);
-			if (other.position == event.position) {
+			if (other.inOnOut == event.inOnOut) {
 				boundary.remove(other);
 				events.remove(other);
 			} else {
@@ -166,7 +166,7 @@ class PolygonSplitter extends AbstractSplitter<Polygon> {
 
 		private boolean isInside(Unity shell) {
 			for (int i = 0, l = shell.sequence.size(); i < l; i++) {
-				switch (sequencer.reference.classify(shell.sequence, i, sequencer.offset).location(side)) {
+				switch (sequencer.reference.classify(shell.sequence, i, sequencer.offset).inOnOut(side)) {
 					case IN:
 						return true;
 
@@ -255,16 +255,16 @@ class PolygonSplitter extends AbstractSplitter<Polygon> {
 			SplitEvent first = boundary.first();
 			SplitEvent last = boundary.last();
 
-			if (first.location != ON || last.location != ON) {
-				if (first.location != ON && last.location != ON) {
-					if (first.location == IN) {
+			if (first.inOnOut != ON || last.inOnOut != ON) {
+				if (first.inOnOut != ON && last.inOnOut != ON) {
+					if (first.inOnOut == IN) {
 						origin = first;
 						io = O_I;
 					} else {
 						origin = last;
 						io = I_O;
 					}
-				} else if (last.location == ON) {
+				} else if (last.inOnOut == ON) {
 					origin = first;
 					io = O_I;
 				} else {
@@ -323,7 +323,7 @@ class PolygonSplitter extends AbstractSplitter<Polygon> {
 
 			if (stop != origin) {
 
-				if (stop.location != ON) {
+				if (stop.inOnOut != ON) {
 					switch (io) {
 						case I_O:
 							start = getLower(boundary, stop);
@@ -384,8 +384,8 @@ class PolygonSplitter extends AbstractSplitter<Polygon> {
 			stop = null;
 			NavigableSet<SplitEvent> events = eventToEvents.get(start);
 
-			if (start.location != ON) {
-				if (start.location == IN) {
+			if (start.inOnOut != ON) {
+				if (start.inOnOut == IN) {
 					forward = true;
 					stop = getHigher(events, start);
 				} else {

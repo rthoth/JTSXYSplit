@@ -12,11 +12,11 @@ import java.util.stream.Stream;
 
 import static com.github.rthoth.xysplit.IO.I_O;
 import static com.github.rthoth.xysplit.IO.O_I;
-import static com.github.rthoth.xysplit.Location.*;
+import static com.github.rthoth.xysplit.InOnOut.*;
 import static com.github.rthoth.xysplit.Side.GT;
 import static com.github.rthoth.xysplit.Side.LT;
 
-class PolygonMerger extends AbstractMerger<Polygon> {
+public class PolygonMerger extends AbstractMerger<Polygon> {
 
 	private final MergeNodeSequencer.Poly sequencer;
 	private final PolySideMerger sideMerger;
@@ -164,7 +164,7 @@ class PolygonMerger extends AbstractMerger<Polygon> {
 					Node lt = t2._1;
 					Node gt = t2._2;
 
-					if (!(lt.location == ON && gt.location == ON)) {
+					if (!(lt.inOnOut == ON && gt.inOnOut == ON)) {
 						double position = (lt.position + gt.position) / 2;
 						MergeEvent<Unity> event = new MergeEvent<>(position, lt, gt);
 						boundary.put(position, event);
@@ -268,8 +268,8 @@ class PolygonMerger extends AbstractMerger<Polygon> {
 				addBorderIntersection();
 				side = side.invert();
 				visitedUnities.add(nodeToUnity.get(startNode));
-				//positions.add(startNode.position);
-				//positions.add(stopNode.position);
+				//positions.add(startNode.inOnOut);
+				//positions.add(stopNode.inOnOut);
 
 				CoordinateSequenceBuilder.Builder segment;
 
@@ -364,15 +364,15 @@ class PolygonMerger extends AbstractMerger<Polygon> {
 
 		private void addBorderIntersection() {
 //			double lower, upper;
-//			switch (Double.compare(startEvent.position, stopEvent.position)) {
+//			switch (Double.compare(startEvent.inOnOut, stopEvent.inOnOut)) {
 //				case -1:
-//					lower = startEvent.position;
-//					upper = stopEvent.position;
+//					lower = startEvent.inOnOut;
+//					upper = stopEvent.inOnOut;
 //					break;
 //
 //				case 1:
-//					lower = stopEvent.position;
-//					upper = startEvent.position;
+//					lower = stopEvent.inOnOut;
+//					upper = startEvent.inOnOut;
 //					break;
 //
 //				default:
@@ -406,7 +406,7 @@ class PolygonMerger extends AbstractMerger<Polygon> {
 
 		private boolean canBeOrigin(Node node) {
 			if (node != null)
-				return node.location == IN;
+				return node.inOnOut == IN;
 			else
 				return false;
 		}
@@ -469,10 +469,10 @@ class PolygonMerger extends AbstractMerger<Polygon> {
 			if (startNode != null) {
 				Unity unity = nodeToUnity.get(startNode);
 
-				if (startNode.location == IN) {
+				if (startNode.inOnOut == IN) {
 					stopNode = getHigher(unity.nodes, startNode);
 					forward = true;
-				} else if (startNode.location == OUT) {
+				} else if (startNode.inOnOut == OUT) {
 					stopNode = getLower(unity.nodes, startNode);
 					forward = false;
 				} else {
@@ -489,8 +489,8 @@ class PolygonMerger extends AbstractMerger<Polygon> {
 			Node lt = startEvent.lt, gt = startEvent.gt;
 
 			if (lt != null && gt != null) {
-				if (lt.location != gt.location) {
-					side = lt.location == IN ? LT : GT;
+				if (lt.inOnOut != gt.inOnOut) {
+					side = lt.inOnOut == IN ? LT : GT;
 				} else {
 					side = side.invert();
 				}

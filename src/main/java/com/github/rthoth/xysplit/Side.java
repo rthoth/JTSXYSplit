@@ -5,12 +5,12 @@ enum Side {
 
 	LT, GT, EQ;
 
-	public Location location(Side reference) {
+	public InOnOut inOnOut(Side reference) {
 
 	   if (this != EQ)
-			return (this == reference) ? Location.IN : Location.OUT;
+			return (this == reference) ? InOnOut.IN : InOnOut.OUT;
 		else
-			return Location.ON;
+			return InOnOut.ON;
 	}
 
 	public Side invert() {

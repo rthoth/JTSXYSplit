@@ -5,7 +5,7 @@ import org.locationtech.jts.geom.CoordinateSequence;
 
 import java.util.Comparator;
 
-import static com.github.rthoth.xysplit.Location.ON;
+import static com.github.rthoth.xysplit.InOnOut.ON;
 
 class MergeEvent<T> {
 
@@ -41,11 +41,11 @@ class MergeEvent<T> {
 
 	public boolean canBeOrigin() {
 		if (lt != null && gt != null) {
-			return lt.location != ON && gt.location != ON && lt.location != gt.location;
-		} else if (lt != null && lt.location != ON) {
+			return lt.inOnOut != ON && gt.inOnOut != ON && lt.inOnOut != gt.inOnOut;
+		} else if (lt != null && lt.inOnOut != ON) {
 			return true;
 		} else {
-			return gt != null && gt.location != ON;
+			return gt != null && gt.inOnOut != ON;
 		}
 	}
 
@@ -57,22 +57,22 @@ class MergeEvent<T> {
 		public final int index;
 		public final double position;
 		public final CoordinateSequence sequence;
-		public final Location location;
+		public final InOnOut inOnOut;
 
-		public Node(int index, double position, CoordinateSequence sequence, Location location) {
+		public Node(int index, double position, CoordinateSequence sequence, InOnOut inOnOut) {
 			this.index = index;
 			this.position = position;
 			this.sequence = sequence;
-			this.location = location;
+			this.inOnOut = inOnOut;
 		}
 
 		public Node copy(int index, CoordinateSequence sequence) {
-			return new Node(index, position, sequence, location);
+			return new Node(index, position, sequence, inOnOut);
 		}
 
 		@Override
 		public String toString() {
-			return String.format("(i=%d, p=%f, l=%s)", index, position, location);
+			return String.format("(i=%d, p=%f, l=%s)", index, inOnOut, inOnOut);
 		}
 
 		public double getX() {
@@ -88,15 +88,15 @@ class MergeEvent<T> {
 		}
 
 		public Node withIndex(int newIndex) {
-			return new Node(newIndex, position, sequence, location);
+			return new Node(newIndex, position, sequence, inOnOut);
 		}
 
 		public Node withSequence(CoordinateSequence sequence) {
-			return new Node(index, position, sequence, location);
+			return new Node(index, position, sequence, inOnOut);
 		}
 
-		public Node withIndex(int newIndex, Location newLocation) {
-			return new Node(newIndex, position, sequence, newLocation);
+		public Node withIndex(int newIndex, InOnOut newInOnOut) {
+			return new Node(newIndex, position, sequence, newInOnOut);
 		}
 	}
 }

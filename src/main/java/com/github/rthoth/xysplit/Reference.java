@@ -5,7 +5,10 @@ import org.locationtech.jts.geom.CoordinateSequence;
 
 import static com.github.rthoth.xysplit.XY.X;
 
-
+/**
+ * Reference represents where and how to split.
+ *
+ */
 public class Reference {
 
 	public final XY xy;

@@ -6,7 +6,7 @@ import java.util.Collections;
 import java.util.Deque;
 import java.util.LinkedList;
 
-class GeometryCollectionMerger extends AbstractMerger<Geometry> {
+public class GeometryCollectionMerger extends AbstractMerger<Geometry> {
 
 	public GeometryCollectionMerger(Reference reference, double offset) {
 		super(reference, offset);

@@ -7,9 +7,9 @@ import java.util.*;
 import java.util.function.Function;
 import java.util.function.ToDoubleFunction;
 
-import static com.github.rthoth.xysplit.Location.IN;
-import static com.github.rthoth.xysplit.Location.ON;
-import static com.github.rthoth.xysplit.Location.OUT;
+import static com.github.rthoth.xysplit.InOnOut.IN;
+import static com.github.rthoth.xysplit.InOnOut.ON;
+import static com.github.rthoth.xysplit.InOnOut.OUT;
 import static com.github.rthoth.xysplit.Side.GT;
 import static com.github.rthoth.xysplit.Side.LT;
 import static com.github.rthoth.xysplit.XY.X;
@@ -27,8 +27,6 @@ abstract class SplitSequencer implements Function<CoordinateSequence, SplitSeque
 			this.lt = lt;
 			this.gt = gt;
 		}
-
-
 	}
 
 	private final XYDefinitions.OrdinateExtractor ordinatePosition;
@@ -101,8 +99,8 @@ abstract class SplitSequencer implements Function<CoordinateSequence, SplitSeque
 					current = reference.classify(sequence, i, offset);
 
 					if (current != last) {
-						register(reference, i, current.location(LT), last.location(LT), lt);
-						register(reference, i, current.location(GT), last.location(GT), gt);
+						register(reference, i, current.inOnOut(LT), last.inOnOut(LT), lt);
+						register(reference, i, current.inOnOut(GT), last.inOnOut(GT), gt);
 						last = current;
 					}
 				}
@@ -134,12 +132,12 @@ abstract class SplitSequencer implements Function<CoordinateSequence, SplitSeque
 					gtCurrent = gtReference.classify(sequence, i, offset);
 
 					if (ltCurrent != ltLast) {
-						register(ltReference, i, ltCurrent.location(LT), ltLast.location(LT), lt);
+						register(ltReference, i, ltCurrent.inOnOut(LT), ltLast.inOnOut(LT), lt);
 						ltLast = ltCurrent;
 					}
 
 					if (gtCurrent != gtLast) {
-						register(gtReference, i, ltCurrent.location(GT), ltLast.location(GT), gt);
+						register(gtReference, i, ltCurrent.inOnOut(GT), ltLast.inOnOut(GT), gt);
 						gtLast = gtCurrent;
 					}
 				}
@@ -154,7 +152,7 @@ abstract class SplitSequencer implements Function<CoordinateSequence, SplitSeque
 
 		protected abstract void preStart();
 
-		protected abstract void register(Reference reference, int index, Location current, Location last, Deque<SplitEvent> events);
+		protected abstract void register(Reference reference, int index, InOnOut current, InOnOut last, Deque<SplitEvent> events);
 	}
 
 	private class LineSequencer extends Sequencer {
@@ -170,11 +168,11 @@ abstract class SplitSequencer implements Function<CoordinateSequence, SplitSeque
 
 		@Override
 		protected void preStart() {
-			assert sequence.size() == 0 || sequence.size() > 1 : "CoordinateSequence must have more than 1 point or to be empty!";
+			assert sequence.size() > 1 || sequence.size() == 0 : "CoordinateSequence must have more than 1 point or to be empty!";
 		}
 
 		@Override
-		protected void register(Reference reference, int index, Location current, Location last, Deque<SplitEvent> events) {
+		protected void register(Reference reference, int index, InOnOut current, InOnOut last, Deque<SplitEvent> events) {
 			throw new UnsupportedOperationException();
 		}
 	}
@@ -193,23 +191,23 @@ abstract class SplitSequencer implements Function<CoordinateSequence, SplitSeque
 
 				if (first != last) {
 					if (first.index != 0 || last.index != sequence.size() - 1) {
-						if (first.location == last.location) {
-							if (first.location == OUT) {
+						if (first.inOnOut == last.inOnOut) {
+							if (first.inOnOut == OUT) {
 								events.pollFirst();
 							} else {
 								events.pollLast();
 							}
 						}
 					} else {
-						if (first.location == last.location) {
-							if (first.location == OUT)
+						if (first.inOnOut == last.inOnOut) {
+							if (first.inOnOut == OUT)
 								events.pollFirst();
 							else
 								events.pollLast();
 						} else {
 							events.pollLast();
 							events.pollFirst();
-							if (first.location == IN) {
+							if (first.inOnOut == IN) {
 								events.addFirst(new SplitEvent(0, ordinatePosition.apply(sequence, 0), ON, null, sequence));
 							}
 						}
@@ -226,7 +224,7 @@ abstract class SplitSequencer implements Function<CoordinateSequence, SplitSeque
 		}
 
 		@Override
-		protected void register(Reference reference, int index, Location current, Location last, Deque<SplitEvent> events) {
+		protected void register(Reference reference, int index, InOnOut current, InOnOut last, Deque<SplitEvent> events) {
 			SplitEvent newEvent = null;
 
 			if (current != ON && last != ON) {
@@ -239,7 +237,7 @@ abstract class SplitSequencer implements Function<CoordinateSequence, SplitSeque
 				int lastIndex = index - 1;
 
 				if (lastEvent != null) {
-					if (lastEvent.location != current) {
+					if (lastEvent.inOnOut != current) {
 						if (current == IN) {
 							if (lastEvent.index != lastIndex) {
 								newEvent = new SplitEvent(lastIndex, ordinatePosition.apply(sequence, lastIndex), current, null, sequence);

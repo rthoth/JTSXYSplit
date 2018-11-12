@@ -1,9 +1,9 @@
 package com.github.rthoth.xysplit;
 
-enum Location {
+enum InOnOut {
 	IN, OUT, ON;
 
-	public Location invert() {
+	public InOnOut invert() {
 		switch (this) {
 		case IN:
 			return OUT;

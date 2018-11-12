@@ -6,7 +6,7 @@ import java.util.function.Function;
 
 
 /**
- * This is a main class. You can use this to split your geometries.
+ * You should use this class to split your geometries.
  */
 public class XYSplitter implements Function<Geometry, SplitResult> {
 
@@ -49,11 +49,11 @@ public class XYSplitter implements Function<Geometry, SplitResult> {
 			if (geometry instanceof Polygon)
 				return new PolygonSplitter(reference, offset).apply((Polygon) geometry, padding);
 			else if (geometry instanceof MultiPolygon)
-				return new MultiPolygonSplitter(reference, offset).applyPadding((MultiPolygon) geometry, padding);
+				return new MultiPolygonSplitter(reference, offset).apply((MultiPolygon) geometry, padding);
 			else if (geometry instanceof LineString)
 				return new LineStringSplitter(reference, offset).apply((LineString) geometry, padding);
 			else if (geometry instanceof MultiLineString)
-				return new MultiLineStringSplitter(reference, offset).applyPadding((MultiLineString) geometry, padding);
+				return new MultiLineStringSplitter(reference, offset).apply((MultiLineString) geometry, padding);
 			else
 				throw new TopologyException("Invalid geometry type " + geometry.getClass().getName() + "!");
 		} else
